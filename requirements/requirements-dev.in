@@ -1,0 +1,13 @@
+-r requirements.txt
+pytest
+coverage
+mock
+types-mock
+black
+mypy
+isort
+flake8
+flake8-black
+flake8-docstrings
+flake8-requirements
+Flake8-pyproject

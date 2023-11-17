@@ -1,0 +1,146 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+    name = "pm"
+    description = "Build tool for windows, similar to make on Linux"
+version = "0.0.1"
+readme = "README.md"
+authors = [
+    {name = "Stanislav Sabev", email = "stanislav.sabev@gmail.com"},
+]
+license = {file =  "LICENSE"}
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+keywords = ["cli", "project"]
+dependencies = [
+    "typer",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "coverage",
+    "mock",
+    "types-mock",
+    "black",
+    "mypy",
+    "isort",
+    "flake8",
+    "flake8-docstrings",
+    "Flake8-pyproject",
+    "pre-commit",
+    "tox",
+]
+
+[project.scripts]
+    pm = "pm.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/stanislavsabev/pm"
+Repository = "https://github.com/stanislavsabev/pm.git"
+"Bug Tracker" = "https://github.com/stanislavsabev/pm/issues"
+Documentation = "https://github.com/stanislavsabev/pm/blob/main/README.md"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    min_version = 4.11.0
+    requires = tox-ignore-env-name-mismatch ~= 0.2.0
+
+    envlist = flake8,isort,format,types,py{310,311} 
+    isolated_build = true
+
+    [testenv]
+    deps = 
+        pytest>=7.4.3
+        coverage>=7.3.2
+    commands = pytest tests
+
+    [testenv:{flake8,isort,format,types}]
+    description = run linters, formatters and type checks
+    env_dir = {toxworkdir}{/}static
+    runner = ignore_env_name_mismatch   
+    deps =
+        -r requirements/requirements-dev.txt
+    commands =
+        python -c "print('Your envdir is: {envdir}')"
+        flake8: flake8 pm tests
+        format: black --check pm tests
+        isort: isort --check pm tests
+        types: mypy {posargs:pm}
+"""
+
+[tool.mypy]
+files = "pm/*.py"
+strict = true
+install_types = true
+check_untyped_defs = true
+ignore_missing_imports = true
+scripts_are_modules = true
+non_interactive = true
+
+[tool.flake8]
+per-file-ignores= "__init__:F401"
+ignore = [
+    "D104","D107"
+]
+extend-ignore = [
+    # See https://github.com/PyCQA/pycodestyle/issues/373
+    "E203"
+]
+max-line-length = 99
+count = true
+max-complexity = 10
+docstring-convention = "google"
+exclude = [
+    "__pycache__",
+    ".venv",
+    "venv",
+    ".env",
+    "env",
+    ".tox",
+    "build",
+    "dist",
+    "docs/conf.py",
+    "run",
+    ".eggs",
+    ".git",
+    "requirements",
+]
+
+[tool.black]
+line-length = 99
+
+[tool.autoflake]
+remove-all-unused-imports = true
+expand-star-imports = true
+remove-unused-variables = true
+remove-duplicate-keys = true
+
+[tool.isort]
+profile = "black"
+
+[tool.bandit]
+targets = "."
+exclude = "tests"
+
