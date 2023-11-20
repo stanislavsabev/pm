@@ -3,6 +3,7 @@
 .vscode/
 testing/
 .python-cfg
+.proj-cfg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
