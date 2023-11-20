@@ -1,5 +1,4 @@
 import json
-from dataclasses import dataclass
 from typing import Any
 
 from pm.config import Config
@@ -22,7 +21,6 @@ def print_projects(projects):
     print(projects)
 
 
-@dataclass
 class Proj:
     short: str | None = None
     name: str | None = None
@@ -35,5 +33,5 @@ class Proj:
 projects: dict[str, Proj] = {}
 
 
-def read_local_file(local_file: str):
+def read_local_proj_file(local_file: str):
     pass

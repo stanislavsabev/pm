@@ -2,11 +2,11 @@
 import json
 import logging
 import os
-from dataclasses import dataclass
 from typing import Any
 
 import typer
 import typing_extensions as ext
+from proj import Proj
 
 from pm.config import Config
 
@@ -15,25 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 app = typer.Typer(name="pm", add_completion=True)
-
-from pathlib import Path
-
-
-@dataclass
-class Proj:
-    short: str | None = None
-    name: str | None = None
-    path: str | None = None
-    branches: list[str] | None = None
-    worktrees: list[str] | None = None
-    is_bare: bool = False
-
-
-projects: dict[str, Proj] = {}
-
-
-def read_local_file(local_file: str):
-    pass
 
 
 def read_db(cfg: Config) -> dict[str, Any]:

@@ -25,19 +25,17 @@ class Config:
         return self.parser[Config.dirs_section]
 
     @property
-    @classmethod
-    def pm_dir(cls) -> str:
-        return os.path.join(os.path.expanduser("~"), cls._pm_dir)
+    def pm_dir(self) -> str:
+        return os.path.join(os.path.expanduser("~"), self._pm_dir)
 
     @property
-    @classmethod
-    def config_file(cls) -> str:
-        return os.path.join(cls.pm_dir(), cls._config_file)
+    def config_file(self) -> str:
+        return os.path.join(self.pm_dir, self._config_file)
 
     @property
     @classmethod
     def db_file(cls) -> str:
-        return os.path.join(cls.pm_dir(), cls._db_file)
+        return os.path.join(cls.pm_dir, cls._db_file)
 
     @staticmethod
     def get_cfg() -> "Config":
