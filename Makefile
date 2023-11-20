@@ -40,9 +40,8 @@ update: ## Update dependencies
 	&& pip-compile requirements/requirements-dev.in \
 	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt
 
-
 run: ## Run example
-	source $(VENV_NAME)/bin/activate \
+	@source $(VENV_NAME)/bin/activate \
 	&& python -m testing.run
 
 clean: ## Clean cache

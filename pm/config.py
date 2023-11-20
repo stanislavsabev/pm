@@ -1,17 +1,15 @@
 import configparser
 import os
-from collections import defaultdict
-from functools import lru_cache
 
 
 class Config:
     sett_section = "settings"
     dirs_section = "dirs"
-    _config_file = "pmconf.ini"
-    _db_file = "db.json"
-    _local_file = ".proj-cfg"
-    _pm_dir = ".pm"
-    _isinstance = None
+    global_config_name = "pmconf.ini"
+    local_config_name = ".proj-cfg"
+    _db_file_name = "db.db"
+    _pm_dir_name = ".pm"
+    _instance = None
 
     def __init__(self) -> None:
         self.parser = configparser.ConfigParser()
@@ -26,21 +24,20 @@ class Config:
 
     @property
     def pm_dir(self) -> str:
-        return os.path.join(os.path.expanduser("~"), self._pm_dir)
+        return os.path.join(os.path.expanduser("~"), self._pm_dir_name)
 
     @property
     def config_file(self) -> str:
-        return os.path.join(self.pm_dir, self._config_file)
+        return os.path.join(self.pm_dir, self.global_config_name)
 
     @property
-    @classmethod
-    def db_file(cls) -> str:
-        return os.path.join(cls.pm_dir, cls._db_file)
+    def db_file(self) -> str:
+        return os.path.join(self.pm_dir, self._db_file_name)
 
     @staticmethod
-    def get_cfg() -> "Config":
-        if Config._isinstance:
-            return Config._isinstance
+    def instance() -> "Config":
+        if Config._instance:
+            return Config._instance
         cfg = Config()
         if not os.path.isdir(cfg.pm_dir):
             os.mkdir(cfg.pm_dir)
@@ -62,8 +59,8 @@ class Config:
             with open(cfg.config_file, "w+", encoding="utf-8") as fp:
                 cfg.parser.write(fp)
 
-        Config._isinstance = cfg
-        return Config._isinstance
+        Config._instance = cfg
+        return Config._instance
 
 
 def _define_proj_dirs(cfg: Config) -> bool:
@@ -74,12 +71,12 @@ def _define_proj_dirs(cfg: Config) -> bool:
 
 def _add_settings_section(cfg: Config) -> None:
     cfg.parser.add_section(cfg.sett_section)
-    cfg.parser[cfg.sett_section]["local"] = cfg._local_file
+    cfg.parser[cfg.sett_section]["local"] = cfg.local_config_name
     _create_db(cfg)
 
 
 def _create_db(cfg: Config):
-    db_file = os.path.join(cfg.pm_dir, cfg._db_file)
+    db_file = os.path.join(cfg.pm_dir, cfg._db_file_name)
     if not os.path.isfile(db_file):
         with open(db_file, "w", encoding="utf-8"):
             pass
