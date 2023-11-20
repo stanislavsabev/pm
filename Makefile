@@ -28,12 +28,22 @@ init: ## Install package and its dependencies into virtual environment
 	python -m venv $(VENV_NAME)
 	source $(VENV_NAME)/bin/activate \
 	&& python -m pip install --upgrade pip \
-	&& pip install -r requirements/requirements-dev.txt \
+	&& pip install pip-tools \
+	&& pip-compile requirements/requirements.in \
+	&& pip-compile requirements/requirements-dev.in \
+	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
 	&& pip install -e .
+
+update: ## Update dependencies
+	source $(VENV_NAME)/bin/activate \
+	&& pip-compile requirements/requirements.in \
+	&& pip-compile requirements/requirements-dev.in \
+	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt
+
 
 run: ## Run example
 	source $(VENV_NAME)/bin/activate \
-	&& python -m example
+	&& python -m testing.run
 
 clean: ## Clean cache
 	find . -name "__pycache__" -type d -exec rm -rf {} +

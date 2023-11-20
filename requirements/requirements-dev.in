@@ -5,6 +5,7 @@ mock
 types-mock
 black
 mypy
+ipykernel
 isort
 flake8
 flake8-black
