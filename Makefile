@@ -35,11 +35,23 @@ run: ## Run example
 	source $(VENV_NAME)/bin/activate \
 	&& python -m example
 
-clean: ## Clean virtual environment
-	rm -rf $(VENV_NAME)
-	rm -rf $(PROJ_NAME).egg-info
+clean: ## Clean cache
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name ".pytest_cache" -type d -exec rm -rf {} +
+
+delete-venv: ## Delete virtual environment
+	rm -rf $(PROJ_NAME).egg-info
+	rm -rf $(VENV_NAME)
+
+format:
+	black $(PROJ_NAME)
+	isort $(PROJ_NAME)
+
+check:
+	black --check $(PROJ_NAME) \
+	& isort --check $(PROJ_NAME) \
+	& flake8 $(PROJ_NAME) \
+	& mypy $(PROJ_NAME)
 
 package: ## Package the project into .zip file
 	rm -rf .$(PROJ_NAME)
