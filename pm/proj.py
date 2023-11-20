@@ -21,7 +21,7 @@ projects: dict[str, Proj] = {}
 def read_db(db_file: str) -> list[str]:
     with open(db_file, "r", encoding="utf-8") as fp:
         for line in fp:
-            yield line
+            yield line.strip("\n")
 
 
 def read_worktrees(path: str) -> list[str]:
@@ -53,13 +53,14 @@ def load_proj(path, cfg_file: str) -> Proj:
     )
 
 
-def read_projects(cfg: Config) -> dict[str, Proj]:
-    res = {}
+def read_projects(cfg: Config) -> list[Proj]:
+    res = []
     for path in read_db(db_file=cfg.db_file):
         project = load_proj(path=path, cfg_file=cfg.local_config_name)
-        res[project.name] = project
+        res.append(project)
     return res
 
 
 def print_projects(projects):
-    print(projects)
+    for project in projects:
+        print(project)
