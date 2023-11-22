@@ -3,15 +3,14 @@ Project manager
 
 ## installation
 
-```powershell
+```shell
 > git clone https://github.com/stanislavsabev/pm
 > pip install .
 ```
 
 ## Usage
 
-- Run
-  ```bash
-  pm [FLAGS] PROJECT [WORKTREE] [PROJ_OPTIONS...]
+```shell
+> pm [FLAGS] PROJECT [WORKTREE] [PROJ_OPTIONS...]
   
-  ```
+```
