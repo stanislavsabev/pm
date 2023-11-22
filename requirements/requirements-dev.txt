@@ -44,6 +44,12 @@ flake8-pyproject==1.2.3
     # via -r requirements/requirements-dev.in
 flake8-requirements==1.7.8
     # via -r requirements/requirements-dev.in
+gitdb==4.0.11
+    # via
+    #   -r requirements/requirements.txt
+    #   gitpython
+gitpython==3.1.40
+    # via -r requirements/requirements.txt
 iniconfig==2.0.0
     # via pytest
 ipykernel==6.26.0
@@ -140,6 +146,10 @@ six==1.16.0
     # via
     #   asttokens
     #   python-dateutil
+smmap==5.0.1
+    # via
+    #   -r requirements/requirements.txt
+    #   gitdb
 snowballstemmer==2.2.0
     # via pydocstyle
 stack-data==0.6.3
