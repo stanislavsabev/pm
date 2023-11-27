@@ -2,37 +2,38 @@ import configparser
 import csv
 import os
 from dataclasses import dataclass
-from typing import Any
 
 from git.repo.base import Repo
 
 from pm import config
 from pm.config import Config
+from pm.typedef import AnyDict, LStr, LStrDict, StrDict
+
+ProjDict = dict[str, "Proj"]
+_projects: ProjDict = {}
+_non_managed: LStrDict = {}
 
 
 @dataclass
 class Proj:
-    short: str | None
-    name: str | None
-    path: str | None
-    local_config: dict[str, Any] | None
-    branches: list[str] | None
+    short: str
+    name: str
+    path: str
+    local_config: AnyDict | None
+    branches: LStr
     active_branch: str
-    worktrees: list[str] | None
+    worktrees: LStr | None
     bare: bool = False
 
 
-_projects: dict[str, Proj] = {}
-_non_managed: dict[str, dict[str, str]]  = {}
-
-def read_db(db_file: str) -> list[str]:
+def read_db(db_file: str) -> list[LStr]:
     with open(db_file, "r", encoding="utf-8") as fp:
         records = [row for row in csv.reader(fp)]
-    records[0] == config.DB_COLUMNS
+    tuple(records[0]) == config.DB_COLUMNS
     return records[1:]
 
 
-def read_local_config(local_config_file) -> dict[str, Any]:
+def read_local_config(local_config_file: str) -> AnyDict:
     local_config = {}
 
     if os.path.isfile(local_config_file):
@@ -43,18 +44,18 @@ def read_local_config(local_config_file) -> dict[str, Any]:
     return local_config
 
 
-def read_repo(path) -> Proj:
+def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     repo = Repo(path)
     bare = repo.bare
     active_branch = repo.active_branch
-    branches = [b.name for b in repo.branches]
-    worktrees = []
+    branches: LStr = [b.name for b in repo.branches]  # type: ignore
+    worktrees: LStr = []
     if bare:
         worktrees = [x for x in os.listdir(path) if x in branches]
-    return branches, active_branch, bare, worktrees
+    return branches, active_branch.name, bare, worktrees
 
 
-def read_managed(cfg: Config) -> dict[str, Proj]:
+def read_managed(cfg: Config) -> ProjDict:
     global _projects
     records = read_db(db_file=cfg.db_file)
     for name, short, path in records:
@@ -73,68 +74,77 @@ def read_managed(cfg: Config) -> dict[str, Proj]:
             local_config=local_config,
             worktrees=worktrees,
             branches=branches,
-            active_branch=active_branch.name,
+            active_branch=active_branch,
         )
     return _projects
 
-def read_non_managed(dirs: dict[str, str]) -> dict[str, dict[str, str]]:
-    non_managed = {}
-    for name, path in dirs.items():
-        non_managed[name] = {}
-        for proj in os.listdir(path):
-            if os.path.isdir(os.path.join(path, proj)) and proj not in projects():
-                non_managed[name][proj] = path
-    return non_managed        
 
-def projects() -> dict[str, Proj]:
+def read_non_managed(dirs: StrDict) -> LStrDict:
+    non_managed: LStrDict = {}
+    for group, path in dirs.items():
+        non_managed[group] = []
+        for proj in os.listdir(path):
+            if os.path.isdir(os.path.join(path, proj)) and proj not in get_projects():
+                non_managed[group].append(proj)
+    return non_managed
+
+
+def get_projects() -> ProjDict:
     global _projects
     if not _projects:
-        _projects = read_managed(config.instance())
+        _projects = read_managed(config.get_instance())
     return _projects
 
 
-def non_managed() -> dict[str, dict[str, str]]:
+def get_non_managed() -> LStrDict:
     global _non_managed
     if not _non_managed:
-        cfg = config.instance()
-        _non_managed = read_non_managed(dirs=cfg.dirs)
-    return _projects
+        _non_managed = read_non_managed(dirs=config.get_instance().dirs)
+    return _non_managed
 
 
-
-def print_project(proj: Proj):
+def print_project(proj: Proj) -> None:
     formatted_branches = []
     branches = proj.worktrees or proj.branches
-    for branch in branches:
-        if branch == proj.active_branch:
-            formatted_branches.append(f"*{branch}")
-        else:
-            formatted_branches.append(branch)
+
+    if branches:
+        for branch in branches:
+            if branch == proj.active_branch:
+                branch_str = f"(*{branch})"
+            else:
+                branch_str = f"({branch})"
+            formatted_branches.append(branch_str)
     name = proj.name
-    if len(name) > 25:
-        name = ".." + name[-23:]
+    ljust = config.get_instance().ljust
+    rjust = config.get_instance().rjust
+    if len(name) > ljust:
+        name = ".." + name[-ljust + 2 :]
     print(
-        "{short:>8} | {name:<25} : {branches}".format(
+        "{short:>{rjust}} | {name:<{ljust}} : {branches}".format(
             short=proj.short,
+            rjust=rjust,
+            ljust=ljust,
             name=name,
             branches=" ".join(formatted_branches),
         )
     )
 
 
-def print_projects(projects: dict[str, Proj]):
+def print_projects(projects: ProjDict) -> None:
     print("> Projects:\n")
     for _, project in projects.items():
         print_project(project)
 
 
-def print_dirs(dirs: dict[str, str]):
-    for name, projects in non_managed().items():
-        proj_dirs = list(projects.keys())
-        print(f"\n> {name}\n")
+def print_dirs(dirs: StrDict) -> None:
+    non_managed = get_non_managed()
+    for group in dirs:
+        projects = non_managed[group]
+        print(f"\n> {group}:\n")
+        ljust = config.get_instance().ljust
         i = 0
-        for i in range(1, len(proj_dirs), 2):
-            d1, d2 = proj_dirs[i - 1], proj_dirs[i]
-            print(f"{d1:<25} | {d2}")
-        if i < len(proj_dirs):
-            print(f"{proj_dirs[-1]:<25} |")
+        for i in range(1, len(projects), 2):
+            d1, d2 = projects[i - 1], projects[i]
+            print(f"{d1:<{ljust}} | {d2}")
+        if i < len(projects):
+            print(f"{projects[-1]:<{ljust}} |")

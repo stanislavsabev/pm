@@ -1,7 +1,6 @@
 """CLI entry point."""
 import logging
 import os
-import shlex
 import subprocess
 import sys
 from typing import Optional
@@ -31,7 +30,7 @@ app = typer.Typer(
 
 
 @app.callback("Default")
-def callback(ctx: typer.Context):
+def callback(ctx: typer.Context) -> None:
     if not ctx.invoked_subcommand:
         ls(all_flag=False)
 
@@ -43,9 +42,9 @@ ls_help = "List projects"
 
 
 @app.command("ls", short_help=f"<-a> {ls_help}", help=ls_help)
-def ls(all_flag: AllFlag = False):
-    cfg = config.instance()
-    projects = proj_mgmt.projects()
+def ls(all_flag: AllFlag = False) -> None:
+    cfg = config.get_instance()
+    projects = proj_mgmt.get_projects()
     proj_mgmt.print_projects(projects)
 
     if all_flag:
@@ -66,7 +65,7 @@ cd_help = "Navigate to project / worktree"
 def cd_cmd(
     name: ProjOpt,
     worktree: WtOpt = None,
-):
+) -> None:
     if not sys.platform == "win32":
         print("Command `cd` is not implemented for non-Windows systems.")
         return
@@ -86,25 +85,25 @@ open_help = "Open project / worktree"
 def open_cmd(
     name: ProjOpt,
     worktree: WtOpt = None,
-):
-    managed = proj_mgmt.projects()
+) -> None:
+    managed = proj_mgmt.get_projects()
     for _, proj in managed.items():
         path = None
         if name in [proj.short, proj.name]:
             path = os.path.join(proj.path, proj.name)
-            if worktree and worktree in proj.worktrees:
+            if worktree and worktree in proj.worktrees:  # type: ignore
                 path = os.path.join(path, worktree)
             break
-    
-    if not path:
-        non_managed = proj_mgmt.non_managed()
 
-        for _, proj_dict in non_managed.items():
+    if not path:
+        non_managed = proj_mgmt.get_non_managed()
+        dirs = config.get_instance().dirs
+        for group, projects in non_managed.items():
             path = None
-            for proj_name, path in proj_dict:
+            for proj_name in projects:
                 if name == proj_name:
-                    path = os.path.join(path, proj_name)
-                    if worktree and worktree in proj.worktrees:
+                    path = os.path.join(dirs[group], proj_name)
+                    if worktree and worktree in proj.worktrees:  # type: ignore
                         path = os.path.join(path, worktree)
                 break
 
