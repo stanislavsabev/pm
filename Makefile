@@ -35,7 +35,7 @@ init: ## Install package and its dependencies
 	&& pip install -e .
 
 .PHONY: update
-update: ## Update dependencies
+req-update: ## Update requirements
 	source $(VENV_PATH)/bin/activate \
 	&& pip-compile requirements/requirements.in \
 	&& pip-compile requirements/requirements-dev.in \
