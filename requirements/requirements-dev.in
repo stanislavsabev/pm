@@ -1,14 +1,13 @@
 -r requirements.txt
-pytest
-coverage
-mock
-types-mock
 black
-mypy
-ipykernel
-isort
+coverage
 flake8
 flake8-black
 flake8-docstrings
-flake8-requirements
 Flake8-pyproject
+flake8-requirements
+isort
+mock
+mypy
+pytest
+types-mock
