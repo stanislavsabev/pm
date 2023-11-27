@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PROJ_NAME=pm
-VENV_NAME=.venv
+VENV_PATH=../.venv
 
 # If the first argument is "rename"...
 ifeq (rename,$(firstword $(MAKECMDGOALS)))
@@ -25,8 +25,8 @@ rename: ## Rename this project. Args: <new-proj-name>
 
 .PHONY: init
 init: ## Install package and its dependencies
-	python -m venv $(VENV_NAME)
-	source $(VENV_NAME)/bin/activate \
+	python -m venv $(VENV_PATH)
+	source $(VENV_PATH)/bin/activate \
 	&& python -m pip install --upgrade pip \
 	&& pip install pip-tools \
 	&& pip-compile requirements/requirements.in \
@@ -36,25 +36,28 @@ init: ## Install package and its dependencies
 
 .PHONY: update
 update: ## Update dependencies
-	source $(VENV_NAME)/bin/activate \
+	source $(VENV_PATH)/bin/activate \
 	&& pip-compile requirements/requirements.in \
 	&& pip-compile requirements/requirements-dev.in \
 	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt
 
 .PHONY: run
 run: ## Run example
-	@source $(VENV_NAME)/bin/activate \
+	@source $(VENV_PATH)/bin/activate \
 	&& python -m testing.run
+
+.PHONY: delete-venv
+delete-venv: ## Delete virtual environment
+	rm -rf $(VENV_PATH)
+	rm -rf $(PROJ_NAME).egg-info
 
 .PHONY: clean
 clean: ## Clean cache
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name ".pytest_cache" -type d -exec rm -rf {} +
 
-.PHONY: delete-venv
-delete-venv: ## Delete virtual environment
-	rm -rf $(PROJ_NAME).egg-info
-	rm -rf $(VENV_NAME)
+.PHONY: cleanall
+cleanall: clean delete-venv ## Clean cache and venv
 
 .PHONY: format
 format:

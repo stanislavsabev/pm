@@ -1,5 +1,11 @@
 import configparser
 import os
+import sys
+
+PROJECTS_DIR = os.environ["PROJECTS_DIR"]
+HOME_DIR = os.path.expanduser("~")
+APP_NAME = "pm"
+DB_COLUMNS = "name", "short", "path"
 
 
 class Config:
@@ -24,7 +30,7 @@ class Config:
 
     @property
     def pm_dir(self) -> str:
-        return os.path.join(os.path.expanduser("~"), self._pm_dir_name)
+        return os.path.join(HOME_DIR, self._pm_dir_name)
 
     @property
     def config_file(self) -> str:
@@ -34,33 +40,33 @@ class Config:
     def db_file(self) -> str:
         return os.path.join(self.pm_dir, self._db_file_name)
 
-    @staticmethod
-    def instance() -> "Config":
-        if Config._instance:
-            return Config._instance
-        cfg = Config()
-        if not os.path.isdir(cfg.pm_dir):
-            os.mkdir(cfg.pm_dir)
-        if not os.path.isfile(cfg.config_file):
-            with open(cfg.config_file, "w+", encoding="utf-8") as fp:
-                pass
 
-        cfg.parser.read(cfg.config_file)
-        write = False
-        if cfg.dirs_section not in cfg.sections:
-            _define_proj_dirs(cfg)
-            write = True
-        if cfg.sett_section not in cfg.sections:
-            _add_settings_section(cfg)
-            write = True
-        if cfg.dirs_section not in cfg.sections:
-            raise ValueError("Config is missing projects directories.")
-        if write:
-            with open(cfg.config_file, "w+", encoding="utf-8") as fp:
-                cfg.parser.write(fp)
-
-        Config._instance = cfg
+def instance() -> "Config":
+    if Config._instance:
         return Config._instance
+    cfg = Config()
+    if not os.path.isdir(cfg.pm_dir):
+        os.mkdir(cfg.pm_dir)
+    if not os.path.isfile(cfg.config_file):
+        with open(cfg.config_file, "w+", encoding="utf-8") as fp:
+            pass
+
+    cfg.parser.read(cfg.config_file)
+    write = False
+    if cfg.dirs_section not in cfg.sections:
+        _define_proj_dirs(cfg)
+        write = True
+    if cfg.sett_section not in cfg.sections:
+        _add_settings_section(cfg)
+        write = True
+    if cfg.dirs_section not in cfg.sections:
+        raise ValueError("Config is missing projects directories.")
+    if write:
+        with open(cfg.config_file, "w+", encoding="utf-8") as fp:
+            cfg.parser.write(fp)
+
+    Config._instance = cfg
+    return Config._instance
 
 
 def _define_proj_dirs(cfg: Config) -> bool:
@@ -81,3 +87,13 @@ def _create_db(cfg: Config):
         with open(db_file, "w", encoding="utf-8"):
             pass
     cfg.parser[cfg.sett_section]["db"] = db_file
+
+
+def get_editor():
+    ed = "code"
+    if "win32" == sys.platform:
+        ed = r"%EDITOR%"
+    elif "linux" in sys.platform:
+        ed = r"$EDITOR"
+    editor = os.path.expandvars(ed)
+    return editor
