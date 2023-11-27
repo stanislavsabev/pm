@@ -89,12 +89,26 @@ def open_cmd(
 ):
     managed = proj_mgmt.projects()
     for _, proj in managed.items():
+        path = None
         if name in [proj.short, proj.name]:
             path = os.path.join(proj.path, proj.name)
             if worktree and worktree in proj.worktrees:
                 path = os.path.join(path, worktree)
             break
-    else:
+    
+    if not path:
+        non_managed = proj_mgmt.non_managed()
+
+        for _, proj_dict in non_managed.items():
+            path = None
+            for proj_name, path in proj_dict:
+                if name == proj_name:
+                    path = os.path.join(path, proj_name)
+                    if worktree and worktree in proj.worktrees:
+                        path = os.path.join(path, worktree)
+                break
+
+    if not path:
         raise ValueError(f"Could not find project `{name}`")
 
     if not os.path.isdir(path):
