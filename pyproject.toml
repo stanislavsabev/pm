@@ -110,7 +110,7 @@ extend-ignore = [
     # See https://github.com/PyCQA/pycodestyle/issues/373
     "E203"
 ]
-max-line-length = 99
+max-line-length = 80
 count = true
 max-complexity = 10
 docstring-convention = "google"
@@ -131,7 +131,7 @@ exclude = [
 ]
 
 [tool.black]
-line-length = 99
+line-length = 80
 
 [tool.autoflake]
 remove-all-unused-imports = true

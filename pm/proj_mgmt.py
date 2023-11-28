@@ -64,7 +64,9 @@ def read_managed(cfg: Config) -> ProjDict:
         if not short:
             short = name
         loc = os.path.join(path, name)
-        local_config = read_local_config(os.path.join(loc, cfg.local_config_name))
+        local_config = read_local_config(
+            os.path.join(loc, cfg.local_config_name)
+        )
         branches, active_branch, bare, worktrees = read_repo(loc)
         _projects[name] = Proj(
             name=name,
@@ -84,7 +86,10 @@ def read_non_managed(dirs: StrDict) -> LStrDict:
     for group, path in dirs.items():
         non_managed[group] = []
         for proj in os.listdir(path):
-            if os.path.isdir(os.path.join(path, proj)) and proj not in get_projects():
+            if (
+                os.path.isdir(os.path.join(path, proj))
+                and proj not in get_projects()
+            ):
                 non_managed[group].append(proj)
     return non_managed
 

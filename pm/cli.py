@@ -36,7 +36,10 @@ def callback(ctx: typer.Context) -> None:
 
 
 AllFlag = ext.Annotated[
-    bool, typer.Option("--all", "-a", help="List all projects, including from PROJECTS_DIR")
+    bool,
+    typer.Option(
+        "--all", "-a", help="List all projects, including from PROJECTS_DIR"
+    ),
 ]
 ls_help = "List projects"
 

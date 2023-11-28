@@ -10,10 +10,11 @@ APP_NAME = "pm"
 DB_COLUMNS = "name", "short", "path"
 
 
-class Sections():
+class Sections:
     sett: str = "settings"
     dirs: str = "dirs"
     print: str = "print"
+
 
 class Config:
     global_config_name: str = "pmconf.ini"
