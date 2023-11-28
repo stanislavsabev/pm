@@ -1,4 +1,4 @@
-import configparser
+from configparser import ConfigParser
 import os
 import sys
 from pm import util
@@ -8,96 +8,85 @@ from pm.typedef import AnyDict, StrDict
 PROJECTS_DIR = os.environ["PROJECTS_DIR"]
 HOME_DIR = os.path.expanduser("~")
 PM_DIR = os.path.join(HOME_DIR, ".pm")
+DB_FILE = os.path.join(PM_DIR, "db.db")
+CONFIG_FILE = os.path.join(PM_DIR, "pmconf.ini")
 APP_NAME = "pm"
 DB_COLUMNS = "name", "short", "path"
 LOCAL_CONFIG_NAME = ".proj-cfg"
 
 
-class Sections:
-    sett: str = "settings"
-    dirs: str = "dirs"
-    print: str = "print"
+def dirs() -> StrDict:
+    return dict(_parser()["dirs"])
 
 
-class Config:
-    db_file = os.path.join(PM_DIR, "db.db")
-    config_file = os.path.join(PM_DIR, "pmconf.ini")
-    _sections = Sections()
-
-    _parser = configparser.ConfigParser()
-
-    @classmethod
-    def dirs(cls) -> StrDict:
-        return dict(cls._parser[cls._sections.dirs])
-
-    @classmethod
-    def ljust(cls) -> int:
-        return int(cls._parser[cls._sections.print]["ljust"])
-
-    @classmethod
-    def rjust(cls) -> int:
-        return int(cls._parser[cls._sections.print]["rjust"])
+def ljust() -> int:
+    return int(_parser()["print"]["ljust"])
 
 
-_instance: Config | None = None
+def rjust() -> int:
+    return int(_parser()["print"]["rjust"])
 
 
 @util.timeit
-def _read_config() -> Config:
-    cfg = Config()
+def _read_config() -> ConfigParser:
     if not os.path.isdir(PM_DIR):
         os.mkdir(PM_DIR)
-    if not os.path.isfile(Config.config_file):
-        with open(Config.config_file, "w+", encoding="utf-8") as fp:
+    if not os.path.isfile(CONFIG_FILE):
+        with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
             pass
 
-    Config.parser.read(Config.config_file)
+    parser = ConfigParser()
+    parser.read(CONFIG_FILE)
     write = False
-    if Config._sections.dirs not in Config._parser.sections():
-        _add_default_proj_dirs()
+    if "dirs" not in parser.sections():
+        _add_default_proj_dirs(parser=parser)
         write = True
-    if Config._sections.sett not in Config._parser.sections():
-        _add_default_settings_section()
+    if "sett" not in parser.sections():
+        _add_default_settings_section(parser=parser)
         write = True
-    if Config._sections.print not in Config._parser.sections():
-        _add_default_print_section()
+    if "print" not in parser.sections():
+        _add_default_print_section(parser=parser)
         write = True
     if write:
-        with open(Config.config_file, "w+", encoding="utf-8") as fp:
-            Config.parser.write(fp)
-    return cfg
-
-def get_instance() -> Config:
-    global _instance
-    if _instance:
-        return _instance
-    _instance = _read_config()
-    return _instance
+        with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
+            parser.write(fp)
+    return parser
 
 
-def _add_default_proj_dirs() -> None:
+__parser: ConfigParser | None = None
+
+
+def _parser() -> ConfigParser:
+    global __parser
+    if __parser:
+        return __parser
+    __parser = _read_config()
+    return __parser
+
+
+def _add_default_proj_dirs(parser: ConfigParser) -> None:
     if env_var := os.environ.get("PROJECTS_DIR"):
-        Config.parser.add_section(Config._sections.dirs)
-        Config.parser[Config._sections.dirs]["projects_dir"] = env_var
+        parser.add_section("dirs")
+        parser["dirs"]["projects_dir"] = env_var
 
 
-def _add_default_settings_section() -> None:
-    Config.parser.add_section(Config._sections.sett)
-    Config.parser[Config._sections.sett]["local"] = LOCAL_CONFIG_NAME
-    _create_db()
+def _add_default_settings_section(parser: ConfigParser) -> None:
+    parser.add_section("sett")
+    parser["sett"]["local"] = LOCAL_CONFIG_NAME
+    _create_db(parser=parser)
 
 
-def _add_default_print_section() -> None:
-    Config.parser.add_section(Config._sections.print)
-    Config.parser[Config._sections.print]["rjust"] = 8
-    Config.parser[Config._sections.print]["ljust"] = 25
+def _add_default_print_section(parser: ConfigParser) -> None:
+    parser.add_section("print")
+    parser["print"]["rjust"] = 8
+    parser["print"]["ljust"] = 25
 
 
-def _create_db() -> None:
-    if not os.path.isfile(Config.db_file):
-        with open(Config.db_file, "w", encoding="utf-8"):
+def _create_db(parser: ConfigParser) -> None:
+    if not os.path.isfile(DB_FILE):
+        with open(DB_FILE, "w", encoding="utf-8"):
             pass
-    Config.parser[Config._sections.sett]["db"] = Config.db_file
+    parser["sett"]["db"] = DB_FILE
 
 
 def get_editor() -> str:
@@ -117,7 +106,7 @@ def read_local_config(loc: str) -> AnyDict:
 
     if os.path.isfile(local_config_file):
         with open(local_config_file, "r", encoding="utf-8") as fp:
-            parser = configparser.ConfigParser()
+            parser = ConfigParser()
             parser.read_file(fp)
             local_config = dict(parser["project"])
     return local_config

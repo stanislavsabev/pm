@@ -46,12 +46,11 @@ ls_help = "List projects"
 
 @app.command("ls", short_help=f"<-a> {ls_help}", help=ls_help)
 def ls(all_flag: AllFlag = False) -> None:
-    cfg = config.get_instance()
     projects = proj_mgmt.get_projects()
     proj_mgmt.print_managed(projects)
 
     if all_flag:
-        proj_mgmt.print_non_managed(cfg.dirs())
+        proj_mgmt.print_non_managed(config.dirs())
     util.print_profiler()
 
 ProjOpt = ext.Annotated[str, typer.Argument(help="Project name")]
@@ -100,7 +99,7 @@ def open_cmd(
 
     if not path:
         non_managed = proj_mgmt.get_non_managed()
-        dirs = config.get_instance().dirs()
+        dirs = config.dirs()
         for group, projects in non_managed.items():
             path = None
             for proj_name in projects:

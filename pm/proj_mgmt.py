@@ -66,7 +66,7 @@ def read_proj(path: str, short: str, name: str) -> Proj:
 @util.timeit
 def read_managed() -> ProjDict:
     global _projects
-    records = read_db(db_file=config.get_instance().db_file)
+    records = read_db(db_file=config.DB_FILE)
     for name, short, path in records:
         if not path:
             path = config.PROJECTS_DIR
@@ -78,7 +78,7 @@ def read_managed() -> ProjDict:
 
 @util.timeit
 def read_non_managed() -> LStrDict:
-    dirs = config.get_instance().dirs()
+    dirs = config.dirs()
     non_managed: LStrDict = {}
     for group, path in dirs.items():
         non_managed[group] = []
@@ -119,8 +119,8 @@ def print_project(proj: Proj) -> None:
                 branch_str = f"({branch})"
             formatted_branches.append(branch_str)
     name = proj.name
-    ljust = config.get_instance().ljust()
-    rjust = config.get_instance().rjust()
+    ljust = config.ljust()
+    rjust = config.rjust()
     if len(name) > ljust:
         name = ".." + name[-ljust + 2 :]
     print(
@@ -146,7 +146,7 @@ def print_non_managed(dirs: StrDict) -> None:
     for group in dirs:
         projects = non_managed[group]
         print(f"\n> {group}:\n")
-        ljust = config.get_instance().ljust()
+        ljust = config.ljust()
         i = 0
         for i in range(1, len(projects), 2):
             d1, d2 = projects[i - 1], projects[i]
