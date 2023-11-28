@@ -1,12 +1,11 @@
-import configparser
 import csv
 import os
 from dataclasses import dataclass
 
 from git.repo.base import Repo
 
+from pm import config, util
 from pm import config
-from pm.config import Config
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
 
 ProjDict = dict[str, "Proj"]
@@ -26,6 +25,7 @@ class Proj:
     bare: bool = False
 
 
+@util.timeit
 def read_db(db_file: str) -> list[LStr]:
     with open(db_file, "r", encoding="utf-8") as fp:
         records = [row for row in csv.reader(fp)]
@@ -33,17 +33,7 @@ def read_db(db_file: str) -> list[LStr]:
     return records[1:]
 
 
-def read_local_config(local_config_file: str) -> AnyDict:
-    local_config = {}
-
-    if os.path.isfile(local_config_file):
-        with open(local_config_file, "r", encoding="utf-8") as fp:
-            parser = configparser.ConfigParser()
-            parser.read_file(fp)
-            local_config = dict(parser["project"])
-    return local_config
-
-
+@util.timeit
 def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     repo = Repo(path)
     bare = repo.bare
@@ -55,33 +45,40 @@ def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     return branches, active_branch.name, bare, worktrees
 
 
-def read_managed(cfg: Config) -> ProjDict:
+@util.timeit
+def read_proj(path: str, short: str, name: str) -> Proj:
+    loc = os.path.join(path, name)
+    local_config = config.read_local_config(loc)
+    branches, active_branch, bare, worktrees = read_repo(loc)
+    return Proj(
+        name=name,
+        short=short,
+        bare=bare,
+        path=path,
+        local_config=local_config,
+        worktrees=worktrees,
+        branches=branches,
+        active_branch=active_branch,
+    )
+
+
+
+@util.timeit
+def read_managed() -> ProjDict:
     global _projects
-    records = read_db(db_file=cfg.db_file)
+    records = read_db(db_file=config.get_instance().db_file)
     for name, short, path in records:
         if not path:
             path = config.PROJECTS_DIR
         if not short:
             short = name
-        loc = os.path.join(path, name)
-        local_config = read_local_config(
-            os.path.join(loc, cfg.local_config_name)
-        )
-        branches, active_branch, bare, worktrees = read_repo(loc)
-        _projects[name] = Proj(
-            name=name,
-            short=short,
-            bare=bare,
-            path=path,
-            local_config=local_config,
-            worktrees=worktrees,
-            branches=branches,
-            active_branch=active_branch,
-        )
+        _projects[name] = read_proj(path, short, name)
     return _projects
 
 
-def read_non_managed(dirs: StrDict) -> LStrDict:
+@util.timeit
+def read_non_managed() -> LStrDict:
+    dirs = config.get_instance().dirs()
     non_managed: LStrDict = {}
     for group, path in dirs.items():
         non_managed[group] = []
@@ -97,17 +94,19 @@ def read_non_managed(dirs: StrDict) -> LStrDict:
 def get_projects() -> ProjDict:
     global _projects
     if not _projects:
-        _projects = read_managed(config.get_instance())
+        _projects = read_managed()
     return _projects
 
 
+@util.timeit
 def get_non_managed() -> LStrDict:
     global _non_managed
     if not _non_managed:
-        _non_managed = read_non_managed(dirs=config.get_instance().dirs)
+        _non_managed = read_non_managed()
     return _non_managed
 
 
+@util.timeit
 def print_project(proj: Proj) -> None:
     formatted_branches = []
     branches = proj.worktrees or proj.branches
@@ -120,8 +119,8 @@ def print_project(proj: Proj) -> None:
                 branch_str = f"({branch})"
             formatted_branches.append(branch_str)
     name = proj.name
-    ljust = config.get_instance().ljust
-    rjust = config.get_instance().rjust
+    ljust = config.get_instance().ljust()
+    rjust = config.get_instance().rjust()
     if len(name) > ljust:
         name = ".." + name[-ljust + 2 :]
     print(
@@ -134,19 +133,20 @@ def print_project(proj: Proj) -> None:
         )
     )
 
-
-def print_projects(projects: ProjDict) -> None:
+@util.timeit
+def print_managed(projects: ProjDict) -> None:
     print("> Projects:\n")
     for _, project in projects.items():
         print_project(project)
 
 
-def print_dirs(dirs: StrDict) -> None:
+@util.timeit
+def print_non_managed(dirs: StrDict) -> None:
     non_managed = get_non_managed()
     for group in dirs:
         projects = non_managed[group]
         print(f"\n> {group}:\n")
-        ljust = config.get_instance().ljust
+        ljust = config.get_instance().ljust()
         i = 0
         for i in range(1, len(projects), 2):
             d1, d2 = projects[i - 1], projects[i]
