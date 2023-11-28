@@ -10,15 +10,17 @@ APP_NAME = "pm"
 DB_COLUMNS = "name", "short", "path"
 
 
+class Sections():
+    sett: str = "settings"
+    dirs: str = "dirs"
+    print: str = "print"
+
 class Config:
-    sett_section: str = "settings"
-    dirs_section: str = "dirs"
     global_config_name: str = "pmconf.ini"
     local_config_name: str = ".proj-cfg"
     _db_file_name: str = "db.db"
     _pm_dir_name: str = ".pm"
-    ljust: int = 25
-    rjust: int = 10
+    _sections = Sections()
 
     def __init__(self) -> None:
         self.parser = configparser.ConfigParser()
@@ -29,7 +31,7 @@ class Config:
 
     @property
     def dirs(self) -> StrDict:
-        return dict(self.parser[Config.dirs_section])
+        return dict(self.parser[Config._sections.dirs])
 
     @property
     def pm_dir(self) -> str:
@@ -43,14 +45,19 @@ class Config:
     def db_file(self) -> str:
         return os.path.join(self.pm_dir, self._db_file_name)
 
+    @property
+    def ljust(self) -> int:
+        return int(self.parser[self._sections.print]["ljust"])
+
+    @property
+    def rjust(self) -> int:
+        return int(self.parser[self._sections.print]["rjust"])
+
 
 _instance: Config | None = None
 
 
-def get_instance() -> "Config":
-    global _instance
-    if _instance:
-        return _instance
+def _read_config() -> Config:
     cfg = Config()
     if not os.path.isdir(cfg.pm_dir):
         os.mkdir(cfg.pm_dir)
@@ -60,32 +67,47 @@ def get_instance() -> "Config":
 
     cfg.parser.read(cfg.config_file)
     write = False
-    if cfg.dirs_section not in cfg.sections:
-        _define_proj_dirs(cfg)
+    if cfg._sections.dirs not in cfg.sections:
+        _add_default_proj_dirs(cfg)
         write = True
-    if cfg.sett_section not in cfg.sections:
-        _add_settings_section(cfg)
+    if cfg._sections.sett not in cfg.sections:
+        _add_default_settings_section(cfg)
         write = True
-    if cfg.dirs_section not in cfg.sections:
+    if cfg._sections.print not in cfg.sections:
+        _add_default_print_section(cfg)
+        write = True
+    if cfg._sections.dirs not in cfg.sections:
         raise ValueError("Config is missing projects directories.")
     if write:
         with open(cfg.config_file, "w+", encoding="utf-8") as fp:
             cfg.parser.write(fp)
+    return cfg
 
-    _instance = cfg
+
+def get_instance() -> Config:
+    global _instance
+    if _instance:
+        return _instance
+    _instance = _read_config()
     return _instance
 
 
-def _define_proj_dirs(cfg: Config) -> None:
+def _add_default_proj_dirs(cfg: Config) -> None:
     if env_var := os.environ.get("PROJECTS_DIR"):
-        cfg.parser.add_section(cfg.dirs_section)
-        cfg.parser[cfg.dirs_section]["projects_dir"] = env_var
+        cfg.parser.add_section(cfg._sections.dirs)
+        cfg.parser[cfg._sections.dirs]["projects_dir"] = env_var
 
 
-def _add_settings_section(cfg: Config) -> None:
-    cfg.parser.add_section(cfg.sett_section)
-    cfg.parser[cfg.sett_section]["local"] = cfg.local_config_name
+def _add_default_settings_section(cfg: Config) -> None:
+    cfg.parser.add_section(cfg._sections.sett)
+    cfg.parser[cfg._sections.sett]["local"] = cfg.local_config_name
     _create_db(cfg)
+
+
+def _add_default_print_section(cfg: Config) -> None:
+    cfg.parser.add_section(cfg._sections.print)
+    cfg.parser[cfg._sections.print]["rjust"] = 8
+    cfg.parser[cfg._sections.print]["ljust"] = 25
 
 
 def _create_db(cfg: Config) -> None:
@@ -93,7 +115,7 @@ def _create_db(cfg: Config) -> None:
     if not os.path.isfile(db_file):
         with open(db_file, "w", encoding="utf-8"):
             pass
-    cfg.parser[cfg.sett_section]["db"] = db_file
+    cfg.parser[cfg._sections.sett]["db"] = db_file
 
 
 def get_editor() -> str:

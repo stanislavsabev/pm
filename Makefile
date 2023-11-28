@@ -59,6 +59,10 @@ clean: ## Clean cache
 .PHONY: cleanall
 cleanall: clean delete-venv ## Clean cache and venv
 
+.PHONY: open-cfg
+open-cfg: ## Open config
+	code ~/.pm
+
 .PHONY: format
 format:
 	black $(PROJ_NAME)
