@@ -40,7 +40,7 @@ def tok() -> None:
 
 
 def print_profiler() -> None:
-    if not os.environ.get("PERF", 1):
+    if not os.environ.get("PERF", 0):
         return
     global profiler
     global elapsed
