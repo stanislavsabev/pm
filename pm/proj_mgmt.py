@@ -45,7 +45,7 @@ def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     return branches, active_branch.name, bare, worktrees
 
 
-@util.timeit
+# @util.timeit
 def read_proj(path: str, short: str, name: str) -> Proj:
     loc = os.path.join(path, name)
     local_config = config.read_local_config(loc)
