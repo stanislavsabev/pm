@@ -23,6 +23,7 @@ def timeit(fn):
 start = 0
 elapsed = 0
 
+
 def tik():
     global start
     start = time.perf_counter()
@@ -41,7 +42,8 @@ def print_profiler():
     global profiler
     global elapsed
     sorted_profiler = {
-        k: f"{v:0.4f}" for k, v in reversed(sorted(profiler.items(), key=lambda kv: kv[1]))
+        k: f"{v:0.4f}"
+        for k, v in reversed(sorted(profiler.items(), key=lambda kv: kv[1]))
     }
     print(json.dumps(sorted_profiler, indent=2))
     print(f"Total elapsed time {elapsed:0.4f}")

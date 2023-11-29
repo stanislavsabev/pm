@@ -1,8 +1,8 @@
-from configparser import ConfigParser
 import os
 import sys
-from pm import util
+from configparser import ConfigParser
 
+from pm import util
 from pm.typedef import AnyDict, StrDict
 
 PROJECTS_DIR = os.environ["PROJECTS_DIR"]

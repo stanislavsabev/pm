@@ -52,6 +52,7 @@ def ls(all_flag: AllFlag = False) -> None:
     if all_flag:
         proj_mgmt.print_non_managed(config.dirs())
 
+
 ProjOpt = ext.Annotated[str, typer.Argument(help="Project name")]
 WtOpt = ext.Annotated[Optional[str], typer.Argument(help="Worktree name")]
 
@@ -128,8 +129,10 @@ def exit(code):
     util.tok()
     util.print_profiler()
     _exit_fn(code)
+
+
 sys.exit = exit
 util.tik()
-    
+
 if __name__ == "__main__":
     app()

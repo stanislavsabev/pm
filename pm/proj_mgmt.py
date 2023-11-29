@@ -1,11 +1,12 @@
+import asyncio
 import csv
 import os
 from dataclasses import dataclass
+from time import sleep
 
 from git.repo.base import Repo
 
 from pm import config, util
-from pm import config
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
 
 ProjDict = dict[str, "Proj"]
@@ -25,7 +26,6 @@ class Proj:
     bare: bool = False
 
 
-@util.timeit
 def read_db(db_file: str) -> list[LStr]:
     with open(db_file, "r", encoding="utf-8") as fp:
         records = [row for row in csv.reader(fp)]
@@ -33,7 +33,6 @@ def read_db(db_file: str) -> list[LStr]:
     return records[1:]
 
 
-@util.timeit
 def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     repo = Repo(path)
     bare = repo.bare
@@ -46,11 +45,11 @@ def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
 
 
 # @util.timeit
-def read_proj(path: str, short: str, name: str) -> Proj:
+async def read_proj(path: str, short: str, name: str) -> Proj:
     loc = os.path.join(path, name)
     local_config = config.read_local_config(loc)
     branches, active_branch, bare, worktrees = read_repo(loc)
-    return Proj(
+    proj = Proj(
         name=name,
         short=short,
         bare=bare,
@@ -60,20 +59,24 @@ def read_proj(path: str, short: str, name: str) -> Proj:
         branches=branches,
         active_branch=active_branch,
     )
+    return proj
 
 
-
-@util.timeit
-def read_managed() -> ProjDict:
+# @util.timeit
+async def read_managed():
     global _projects
     records = read_db(db_file=config.DB_FILE)
+    tasks = []
     for name, short, path in records:
         if not path:
             path = config.PROJECTS_DIR
         if not short:
             short = name
-        _projects[name] = read_proj(path, short, name)
-    return _projects
+        task = asyncio.create_task(read_proj(path, short, name))
+        tasks.append(task)
+
+    for task in tasks:
+        _projects[name] = await task
 
 
 @util.timeit
@@ -94,7 +97,7 @@ def read_non_managed() -> LStrDict:
 def get_projects() -> ProjDict:
     global _projects
     if not _projects:
-        _projects = read_managed()
+        asyncio.run(read_managed())
     return _projects
 
 
@@ -132,6 +135,7 @@ def print_project(proj: Proj) -> None:
             branches=" ".join(formatted_branches),
         )
     )
+
 
 @util.timeit
 def print_managed(projects: ProjDict) -> None:
