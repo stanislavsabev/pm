@@ -3,7 +3,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import Optional
+from typing import Any, Optional
 
 import typer
 import typing_extensions as ext
@@ -88,32 +88,12 @@ def open_cmd(
     name: ProjOpt,
     worktree: WtOpt = None,
 ) -> None:
-    managed = proj_mgmt.get_projects()
-    for _, proj in managed.items():
-        path = None
-        if name in [proj.short, proj.name]:
-            path = os.path.join(proj.path, proj.name)
-            if worktree and worktree in proj.worktrees:  # type: ignore
-                path = os.path.join(path, worktree)
-            break
-
+    path = proj_mgmt.find_managed(name, worktree)
     if not path:
-        non_managed = proj_mgmt.get_non_managed()
-        dirs = config.dirs()
-        for group, projects in non_managed.items():
-            path = None
-            for proj_name in projects:
-                if name == proj_name:
-                    path = os.path.join(dirs[group], proj_name)
-                    if worktree and worktree in proj.worktrees:  # type: ignore
-                        path = os.path.join(path, worktree)
-                break
+        path = proj_mgmt.find_non_managed(name, worktree)
 
-    if not path:
-        raise ValueError(f"Could not find project `{name}`")
-
-    if not os.path.isdir(path):
-        raise FileNotFoundError(f"Cannot find path `{path}`")
+    if not path or not os.path.isdir(path):
+        raise ValueError(f"Could not find project path `{name}`")
 
     editor = config.get_editor()
     cmd = subprocess.Popen(f"{editor} {path}", shell=True)
@@ -125,7 +105,7 @@ def open_cmd(
 _exit_fn = sys.exit
 
 
-def exit(code):
+def exit(code: Any) -> None:
     util.tok()
     util.print_profiler()
     _exit_fn(code)

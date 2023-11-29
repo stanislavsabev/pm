@@ -78,8 +78,8 @@ def _add_default_settings_section(parser: ConfigParser) -> None:
 
 def _add_default_print_section(parser: ConfigParser) -> None:
     parser.add_section("print")
-    parser["print"]["rjust"] = 8
-    parser["print"]["ljust"] = 25
+    parser["print"]["rjust"] = "8"
+    parser["print"]["ljust"] = "25"
 
 
 def _create_db(parser: ConfigParser) -> None:

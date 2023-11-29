@@ -63,7 +63,7 @@ async def read_proj(path: str, short: str, name: str) -> Proj:
 
 
 # @util.timeit
-async def read_managed():
+async def read_managed() -> None:
     global _projects
     records = read_db(db_file=config.DB_FILE)
     tasks = []
@@ -157,3 +157,27 @@ def print_non_managed(dirs: StrDict) -> None:
             print(f"{d1:<{ljust}} | {d2}")
         if i < len(projects):
             print(f"{projects[-1]:<{ljust}} |")
+
+
+def find_managed(name: str, worktree: str | None = None) -> str | None:
+    managed = get_projects()
+    for proj in managed.values():
+        if name in [proj.short, proj.name]:
+            path = os.path.join(proj.path, proj.name)
+            if worktree and worktree in proj.worktrees:  # type: ignore
+                path = os.path.join(path, worktree)
+            return path
+    return None
+
+
+def find_non_managed(name: str, worktree: str | None = None) -> str | None:
+    non_managed = get_non_managed()
+    dirs = config.dirs()
+    for group, projects in non_managed.items():
+        for proj_name in projects:
+            if name == proj_name:
+                path = os.path.join(dirs[group], proj_name)
+                if worktree and worktree in proj.worktrees:  # type: ignore
+                    path = os.path.join(path, worktree)
+                return path
+    return None
