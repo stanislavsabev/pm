@@ -4,6 +4,8 @@ import os
 import time
 from typing import Any, Callable
 
+from pm.typedef import AnyDict
+
 profiler: dict[str, float] = {}
 
 

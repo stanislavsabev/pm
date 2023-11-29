@@ -73,9 +73,9 @@ async def read_managed() -> None:
         if not short:
             short = name
         task = asyncio.create_task(read_proj(path, short, name))
-        tasks.append(task)
+        tasks.append((name, task))
 
-    for task in tasks:
+    for name, task in tasks:
         _projects[name] = await task
 
 
