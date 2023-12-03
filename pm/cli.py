@@ -68,10 +68,10 @@ def cd_cmd(
     name: ProjOpt,
     worktree: WtOpt = None,
 ) -> None:
-    if not sys.platform == "win32":
-        print("Command `cd` is not implemented for non-Windows systems.")
-        return
-
+    # if not sys.platform == "win32":
+    #     print("Command `cd` is not implemented for non-Windows systems.")
+    #     return
+    cd = os.getcwd()
     print(f"cd: {name=}, {worktree=}")
 
 
