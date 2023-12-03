@@ -137,7 +137,7 @@ def print_project(proj: Proj) -> None:
 @util.timeit
 def print_managed(projects: ProjDict) -> None:
     print("> Projects:\n")
-    for _, project in projects.items():
+    for project in sorted(projects.values(), key=lambda p: p.name.lower()):
         print_project(project)
 
 
@@ -148,12 +148,12 @@ def print_non_managed(dirs: StrDict) -> None:
         projects = non_managed[group]
         print(f"\n> {group}:\n")
         ljust = config.ljust()
-        i = 0
-        for i in range(1, len(projects), 2):
-            d1, d2 = projects[i - 1], projects[i]
-            print(f"{d1:<{ljust}} | {d2}")
-        if i < len(projects):
-            print(f"{projects[-1]:<{ljust}} |")
+        for i, project in enumerate(sorted(projects, key=str.lower)):
+            if i % 2 == 0:
+                end = "" if i < len(projects) - 1 else "\n"
+                print(f"{project:<{ljust}} |", end=end)
+            else:
+                print(f" {project}", end="\n")
 
 
 def find_managed(name: str, worktree: str | None = None) -> str | None:
