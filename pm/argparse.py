@@ -1,6 +1,5 @@
 import sys
 
-from pm import app_args
 from pm import commands
 from pm import config
 from pm.typedef import LStr
@@ -45,10 +44,10 @@ def parse_app_flag(argv: LStr, ndx: int) -> int:
     return ndx
 
 
-def parse() -> app_args.AppArgs:
+def parse() -> commands.AppArgs:
     argv = sys.argv[1:]
 
-    args = app_args.AppArgs()
+    args = commands.AppArgs()
     if not argv:  # Called without argument == ls
         cmd_cls = commands.COMMANDS["ls"]
         args.command = cmd_cls()

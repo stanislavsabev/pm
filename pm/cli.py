@@ -1,9 +1,9 @@
 from pm import argparse
-from pm.app_args import AppArgs
+from pm import commands
 
 
 def app() -> None:
-    args: AppArgs = argparse.parse()
+    args: commands.AppArgs = argparse.parse()
     if args.command:
         args.command.run(args)
 

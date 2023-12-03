@@ -2,7 +2,6 @@ import os
 import subprocess
 from typing import Protocol, Type
 
-from pm import app_args
 from pm import config
 from pm import proj_mgmt
 from pm.typedef import LStr
@@ -14,6 +13,13 @@ WS4 = config.WS4
 WS8 = config.WS8
 
 
+class AppArgs:
+    flags: str | None = None
+    command: "ProtoCommand"
+    name: str | None = None
+    worktree: str | None = None
+
+
 class ProtoCommand(Protocol):
     usage: str
     short_usage: str
@@ -22,7 +28,7 @@ class ProtoCommand(Protocol):
     def parse_flag(self, argv: LStr, ndx: int) -> int:
         """Parse command flag."""
 
-    def run(self, args: app_args.AppArgs) -> None:
+    def run(self, args: AppArgs) -> None:
         """Run command."""
 
 
@@ -45,7 +51,7 @@ class Ls:
             raise AttributeError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
-    def run(self, args: app_args.AppArgs) -> None:
+    def run(self, args: AppArgs) -> None:
         del args
         projects = proj_mgmt.get_projects()
         proj_mgmt.print_managed(projects)
@@ -69,7 +75,7 @@ class Cd:
         del ndx
         raise NotImplementedError
 
-    def run(self, args: app_args.AppArgs) -> None:
+    def run(self, args: AppArgs) -> None:
         proj, wt = args.name, args.worktree
         print(f"cd {proj=} {wt=}")
 
@@ -93,7 +99,7 @@ class Open:
             raise AttributeError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
-    def run(self, args: app_args.AppArgs) -> None:
+    def run(self, args: AppArgs) -> None:
         name, worktree = args.name, args.worktree
         if name is None:
             raise ValueError("Missing argument for `name` in command `open`")
