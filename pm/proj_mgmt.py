@@ -86,10 +86,7 @@ def read_non_managed() -> LStrDict:
     for group, path in dirs.items():
         non_managed[group] = []
         for proj in os.listdir(path):
-            if (
-                os.path.isdir(os.path.join(path, proj))
-                and proj not in get_projects()
-            ):
+            if os.path.isdir(os.path.join(path, proj)) and proj not in get_projects():
                 non_managed[group].append(proj)
     return non_managed
 

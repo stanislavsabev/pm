@@ -12,8 +12,7 @@ HELP = ["-h", "--help"]
 
 _help_flag = f"-h --help{WS8}Show this message and exit."
 _short_usage = "\n".join(
-    f"{WS8}{name:>5}{WS8}{cmd.short_usage}"
-    for name, cmd in commands.COMMANDS.items()
+    f"{WS8}{name:>5}{WS8}{cmd.short_usage}" for name, cmd in commands.COMMANDS.items()
 )
 _app_usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
 
