@@ -1,5 +1,6 @@
 import os
 import subprocess
+from typing import Protocol
 from typing import Type
 
 from pm import app_args, config, proj_mgmt
@@ -10,6 +11,18 @@ FLAGS = ["-a", "--all"]
 
 WS4 = config.WS4
 WS8 = config.WS8
+
+
+class ProtoCommand(Protocol):
+    usage: str
+    short_usage: str
+    flags_usage: LStr
+
+    def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command flag."""
+
+    def run(self, args: app_args.AppArgs) -> None:
+        """Run command."""
 
 
 class Ls:
@@ -97,7 +110,7 @@ class Open:
             print(f"{out_=}, {err_=}")
 
 
-COMMANDS: dict[str, Type[app_args.ProtoCommand]] = {
+COMMANDS: dict[str, Type[ProtoCommand]] = {
     "ls": Ls,
     "cd": Cd,
     "open": Open,
