@@ -5,7 +5,8 @@ from dataclasses import dataclass
 
 from git.repo.base import Repo
 
-from pm import config, util
+from pm import config
+from pm import util
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
 
 ProjDict = dict[str, "Proj"]

@@ -1,9 +1,10 @@
 import os
 import subprocess
-from typing import Protocol
-from typing import Type
+from typing import Protocol, Type
 
-from pm import app_args, config, proj_mgmt
+from pm import app_args
+from pm import config
+from pm import proj_mgmt
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]

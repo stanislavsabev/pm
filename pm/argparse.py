@@ -1,6 +1,8 @@
 import sys
 
-from pm import app_args, commands, config
+from pm import app_args
+from pm import commands
+from pm import config
 from pm.typedef import LStr
 
 WS4 = config.WS4
