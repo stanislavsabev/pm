@@ -1,34 +1,53 @@
 import sys
 
-from pm import commands, config
-from pm.args import Args
+from pm import app_args, commands, config
+from pm.typedef import LStr
 
+WS4 = config.WS4
+WS8 = config.WS8
+APP_NAME = config.APP_NAME
 HELP = ["-h", "--help"]
-app_help=f""
+
+_help_flag = f"-h --help{WS8}Show this message and exit."
+_short_usage = "\n".join(
+    f"{WS8}{name:>5}{WS8}{cmd.short_usage}"
+    for name, cmd in commands.COMMANDS.items()
+)
+_app_usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
+
+{WS4}Calling `{APP_NAME}`
+{WS4}  > without args, lists managed projects (`ls` command).
+{WS4}  > with project [worktree], opens a project (`open` command).
+
+{WS4}Commands
+{_short_usage}"""
+_app_flags: LStr = []
 
 
-def print_app_usage():
+def print_usage(usage: str, flags: LStr) -> None:
+    flags.append(_help_flag)
+    flags_str = "\n".join(f"{WS4}{flag}" for flag in flags)
     print(
         f"""
-Usage: {config.APP_NAME} [-h] COMMAND [ARGS] PROJECT [WORKTREE]
+{WS4}Usage: {APP_NAME} {usage}
 
-Calling `{config.APP_NAME}` without args will list managed projects.
+{WS4}Flags
+{flags_str}
 """
-)
+    )
 
 
-def parse_app_flag(argv, ndx):
+def parse_app_flag(argv: LStr, ndx: int) -> int:
     flag = argv[ndx]
-
     ndx += 1
     print(flag)
     return ndx
 
 
-def parse() -> Args:
+def parse() -> app_args.AppArgs:
     argv = sys.argv[1:]
 
-    args = Args()
+    args = app_args.AppArgs()
     if not argv:  # Called without argument == ls
         cmd_cls = commands.COMMANDS["ls"]
         args.command = cmd_cls()
@@ -39,18 +58,19 @@ def parse() -> Args:
     while ndx < len(argv):
         if argv[ndx] in HELP:
             if args.command:
-                args.command.print_usage()
+                print_usage(args.command.usage, args.command.flags_usage)
             else:
-                print_app_usage()
+                print_usage(_app_usage, _app_flags)
             sys.exit(0)
         if argv[ndx].startswith("-"):
-            ndx += flag_parse_fn(argv, ndx)
+            ndx = flag_parse_fn(argv, ndx)
         elif argv[ndx] in commands.COMMANDS:
-            cmd_cls = args.commands[argv[ndx]]
+            cmd_cls = commands.COMMANDS[argv[ndx]]
             args.command = cmd_cls()
             flag_parse_fn = args.command.parse_flag
-        elif not args.project:
-            args.project = argv[ndx]
+        elif not args.name:
+            cmd_cls = commands.COMMANDS["open"]
+            args.name = argv[ndx]
         elif not args.worktree:
             args.worktree = argv[ndx]
         ndx += 1

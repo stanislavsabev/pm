@@ -5,6 +5,8 @@ from configparser import ConfigParser
 from pm import util
 from pm.typedef import AnyDict, StrDict
 
+WS8 = " " * 8
+WS4 = " " * 4
 PROJECTS_DIR = os.environ["PROJECTS_DIR"]
 HOME_DIR = os.path.expanduser("~")
 PM_DIR = os.path.join(HOME_DIR, ".pm")
@@ -27,7 +29,6 @@ def rjust() -> int:
     return int(_parser()["print"]["rjust"])
 
 
-@util.timeit
 def _read_config() -> ConfigParser:
     if not os.path.isdir(PM_DIR):
         os.mkdir(PM_DIR)

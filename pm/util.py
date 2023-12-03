@@ -9,7 +9,7 @@ from pm.typedef import AnyDict
 profiler: dict[str, float] = {}
 
 
-def timeit(fn: Callable) -> Callable:
+def timeit(fn: Callable[..., Any]) -> Callable[..., Any]:
     global profiler
 
     @functools.wraps(fn)

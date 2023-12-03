@@ -2,7 +2,6 @@ import asyncio
 import csv
 import os
 from dataclasses import dataclass
-from time import sleep
 
 from git.repo.base import Repo
 
@@ -28,8 +27,8 @@ class Proj:
 
 def read_db(db_file: str) -> list[LStr]:
     with open(db_file, "r", encoding="utf-8") as fp:
-        records = [row for row in csv.reader(fp)]
-    tuple(records[0]) == config.DB_COLUMNS
+        records = list(csv.reader(fp))
+    assert tuple(records[0]) == config.DB_COLUMNS
     return records[1:]
 
 
@@ -44,7 +43,7 @@ def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     return branches, active_branch.name, bare, worktrees
 
 
-# @util.timeit
+@util.timeit
 async def read_proj(path: str, short: str, name: str) -> Proj:
     loc = os.path.join(path, name)
     local_config = config.read_local_config(loc)
@@ -62,7 +61,7 @@ async def read_proj(path: str, short: str, name: str) -> Proj:
     return proj
 
 
-# @util.timeit
+@util.timeit
 async def read_managed() -> None:
     global _projects
     records = read_db(db_file=config.DB_FILE)
@@ -177,7 +176,7 @@ def find_non_managed(name: str, worktree: str | None = None) -> str | None:
         for proj_name in projects:
             if name == proj_name:
                 path = os.path.join(dirs[group], proj_name)
-                if worktree and worktree in proj.worktrees:  # type: ignore
+                if worktree:
                     path = os.path.join(path, worktree)
                 return path
     return None
