@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 PROJ_NAME=pm
-VENV_PATH=../.venv
+VENV_PATH=$$(cat .python-cfg)
 
 # If the first argument is "rename"...
 ifeq (rename,$(firstword $(MAKECMDGOALS)))
