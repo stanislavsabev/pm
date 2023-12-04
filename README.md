@@ -2,7 +2,7 @@
 
 List and manage available projects.
 
-## installation
+## Installation
 
 ```shell
 > pip install git+https://github.com/stanislavsabev/pm.git@main
