@@ -1,3 +1,4 @@
+"""Commands module."""
 import dataclasses
 import subprocess
 from pathlib import Path
@@ -16,12 +17,20 @@ WS8 = const.WS8
 
 
 class ProtoCommand(Protocol):
+    """Application command prototype.
+
+    Attributes:
+        usage: str, Command help
+        short_usage: str, Short command help
+        flags_usage: list of str, command flags help
+    """
+
     usage: str
     short_usage: str
     flags_usage: LStr
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command flag."""
+        """Parse command option."""
 
     def run(self, args: "AppArgs") -> None:
         """Run command."""
@@ -29,6 +38,8 @@ class ProtoCommand(Protocol):
 
 @dataclasses.dataclass
 class AppArgs:
+    """Application arguments."""
+
     flags: str | None = None
     name: str | None = None
     command: ProtoCommand | None = None
@@ -36,6 +47,8 @@ class AppArgs:
 
 
 class Ls:
+    """Handler for the ls command."""
+
     usage: str = f"""ls [FLAGS]
 
 {WS4}List projects"""
@@ -46,6 +59,7 @@ class Ls:
     all_flag = False
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command option."""
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "a/all".split("/"):
@@ -55,6 +69,7 @@ class Ls:
         return ndx
 
     def run(self, args: AppArgs) -> None:
+        """Run ls command."""
         del args
         projects = proj_mgmt.get_projects()
         proj_mgmt.print_managed(projects)
@@ -64,6 +79,8 @@ class Ls:
 
 
 class Cd:
+    """Handler for the cd command."""
+
     usage = f"""cd PROJECT [WORKTREE]
 
 {WS4}Navigate to project
@@ -74,16 +91,20 @@ class Cd:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command option."""
         del argv
         del ndx
         raise NotImplementedError
 
     def run(self, args: AppArgs) -> None:
+        """Run cd command."""
         proj, wt = args.name, args.worktree
         print(f"cd {proj=} {wt=}")
 
 
 class Open:
+    """Handler for the open command."""
+
     usage: str = f"""[open] PROJECT [WORKTREE]
 
 {WS4}Open project with editor
@@ -94,6 +115,7 @@ class Open:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command option."""
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "a/all".split("/"):
@@ -103,6 +125,7 @@ class Open:
         return ndx
 
     def run(self, args: AppArgs) -> None:
+        """Run open command."""
         name, worktree = args.name, args.worktree
         if name is None:
             raise ValueError("Missing argument for `name` in command `open`")
@@ -121,6 +144,8 @@ class Open:
 
 
 class Add:
+    """Handler for the add command."""
+
     usage = f"""add PROJECT [-s SHORT_NAME]
 
 {WS4}Add managed project
@@ -132,6 +157,7 @@ class Add:
     short_name: str | None = None
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command option."""
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "s/short".split("/"):
@@ -142,6 +168,7 @@ class Add:
         return ndx
 
     def run(self, args: AppArgs) -> None:
+        """Run add command."""
         if not args.name:
             raise ValueError("Missing argument for `project` in command `add`")
         name_arg = args.name
@@ -161,7 +188,7 @@ class Add:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
-        proj_mgmt.write_proj(
+        proj_mgmt.add_new_proj(
             name=path.name, short=self.short_name, path=path.absolute().parent
         )
 

@@ -1,3 +1,4 @@
+"""Project management module."""
 import asyncio
 import dataclasses
 import os
@@ -17,6 +18,19 @@ _non_managed: LStrDict = {}
 
 @dataclasses.dataclass
 class Proj:
+    """Project data.
+
+    Attributes:
+        short: str, short name for the project
+        name: str, the project name
+        path: str, the project path
+        local_config: dict, optional configuration data read from local file.
+        branches: list with the project branches
+        active_branch: str, the active branch, if defined
+        worktrees: list with the project worktrees
+        bare: bool, True if the project repository is bare.
+    """
+
     short: str
     name: str
     path: str
@@ -28,18 +42,24 @@ class Proj:
 
 
 def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
+    """Read git repository.
+
+    Returns:
+        A tuple with branches, active_branch, is_bare_repo and worktrees
+    """
     repo = Repo(path)
-    bare = repo.bare
+    is_bare_repo = repo.bare
     active_branch = repo.active_branch
     branches: LStr = [b.name for b in repo.branches]  # type: ignore
     worktrees: LStr = []
-    if bare:
+    if is_bare_repo:
         worktrees = [x for x in os.listdir(path) if x in branches]
-    return branches, active_branch.name, bare, worktrees
+    return branches, active_branch.name, is_bare_repo, worktrees
 
 
 # @util.timeit
 async def read_proj(name: str, short: str, path: str) -> Proj:
+    """Read project local config and git repo."""
     proj_path = Path(path) / name
     local_config = config.read_local_config(path=proj_path)
     branches, active_branch, bare, worktrees = read_repo(proj_path)
@@ -57,7 +77,8 @@ async def read_proj(name: str, short: str, path: str) -> Proj:
 
 
 # @util.timeit
-def write_proj(name: str, short: str, path: Path) -> None:
+def add_new_proj(name: str, short: str, path: Path) -> None:
+    """Add new project with local file and save to the database."""
     config.write_local_config(path / name)
     proj_path: str | None = None if path == Path(config.PROJECTS_DIR) else str(path)
     short_name: str | None = None if name == short else short
@@ -66,6 +87,7 @@ def write_proj(name: str, short: str, path: Path) -> None:
 
 @util.timeit
 async def read_managed() -> None:
+    """Read managed projects from the database and each project's git repository."""
     global _projects
     records = db.read_db()
     tasks = []
@@ -83,6 +105,7 @@ async def read_managed() -> None:
 
 @util.timeit
 def read_non_managed() -> LStrDict:
+    """Read non-managed projects directories."""
     dirs = config.dirs()
     non_managed: LStrDict = {}
     for group, path in dirs.items():
@@ -94,6 +117,7 @@ def read_non_managed() -> LStrDict:
 
 
 def get_projects() -> ProjDict:
+    """Cache function for the managed projects."""
     global _projects
     if not _projects:
         asyncio.run(read_managed())
@@ -102,6 +126,7 @@ def get_projects() -> ProjDict:
 
 @util.timeit
 def get_non_managed() -> LStrDict:
+    """Cache function for the non-managed projects."""
     global _non_managed
     if not _non_managed:
         _non_managed = read_non_managed()
@@ -110,6 +135,7 @@ def get_non_managed() -> LStrDict:
 
 @util.timeit
 def print_project(proj: Proj) -> None:
+    """Print project formatted info."""
     formatted_branches = []
     branches = proj.worktrees or proj.branches
 
@@ -138,6 +164,7 @@ def print_project(proj: Proj) -> None:
 
 @util.timeit
 def print_managed(projects: ProjDict) -> None:
+    """Print formatted info for the managed projects."""
     print("> Projects:\n")
     for project in sorted(projects.values(), key=lambda p: p.name.lower()):
         print_project(project)
@@ -145,6 +172,7 @@ def print_managed(projects: ProjDict) -> None:
 
 @util.timeit
 def print_non_managed(dirs: StrDict) -> None:
+    """Print formatted info for the non-managed projects."""
     non_managed = get_non_managed()
     for group in dirs:
         projects = non_managed[group]
@@ -159,6 +187,7 @@ def print_non_managed(dirs: StrDict) -> None:
 
 
 def find_managed(name: str, worktree: str | None = None) -> Path | None:
+    """Find a managed project path."""
     managed = get_projects()
     for proj in managed.values():
         if name in [proj.short, proj.name]:
@@ -174,6 +203,7 @@ def find_managed(name: str, worktree: str | None = None) -> Path | None:
 
 
 def find_non_managed(name: str, worktree: str | None = None) -> Path | None:
+    """Find a non-managed project path."""
     non_managed = get_non_managed()
     dirs = config.dirs()
     for group, projects in non_managed.items():

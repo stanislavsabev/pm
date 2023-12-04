@@ -1,3 +1,4 @@
+"""Project utilities."""
 import functools
 import json
 import os
@@ -10,6 +11,7 @@ profiler: dict[str, float] = {}
 
 
 def timeit(fn: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator to time a function."""
     global profiler
 
     @functools.wraps(fn)
@@ -28,11 +30,13 @@ elapsed = 0.0
 
 
 def tik() -> None:
+    """Start timer."""
     global start
     start = time.perf_counter()
 
 
 def tok() -> None:
+    """Stop timer."""
     global start
     global elapsed
     end = time.perf_counter()
@@ -40,6 +44,7 @@ def tok() -> None:
 
 
 def print_profiler() -> None:
+    """Print time profiler."""
     if not os.environ.get("PERF", 0):
         return
     global profiler

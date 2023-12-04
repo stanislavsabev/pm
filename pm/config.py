@@ -1,3 +1,4 @@
+"""Project configuration."""
 import os
 import sys
 from configparser import ConfigParser
@@ -13,14 +14,17 @@ CONFIG_FILE = Path(const.PM_DIR / "pmconf.ini")
 
 
 def dirs() -> StrDict:
+    """Project directories saved in the configuration."""
     return dict(_parser()["dirs"])
 
 
 def ljust() -> int:
+    """Text left justify configuration."""
     return int(_parser()["print"]["ljust"])
 
 
 def rjust() -> int:
+    """Text right justify configuration."""
     return int(_parser()["print"]["rjust"])
 
 
@@ -77,6 +81,7 @@ def _add_default_print_section(parser: ConfigParser) -> None:
 
 
 def get_editor() -> str:
+    """Get default editor app."""
     ed = "code"
     if "win32" == sys.platform:
         ed = r"%EDITOR%"
@@ -88,6 +93,7 @@ def get_editor() -> str:
 
 @util.timeit
 def read_local_config(path: Path) -> AnyDict:
+    """Read local config file."""
     local_config_file = path / const.LOCAL_CONFIG_NAME
     local_config = {}
 
@@ -100,6 +106,7 @@ def read_local_config(path: Path) -> AnyDict:
 
 
 def write_local_config(path: Path, data: AnyDict | None = None) -> None:
+    """Write to local config file."""
     local_config_file = path / const.LOCAL_CONFIG_NAME
     if not data:
         data = {"description": "Empty", "lang": "na"}

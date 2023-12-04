@@ -1,3 +1,4 @@
+"""Type definitions for the project."""
 import typing
 
 import typer

@@ -1,3 +1,4 @@
+"""Argument parsing module."""
 import sys
 
 from pm import commands
@@ -25,6 +26,7 @@ _app_flags: LStr = []
 
 
 def print_usage(usage: str, flags: LStr) -> None:
+    """Print usage and flags."""
     flags.append(_help_flag)
     flags_str = "\n".join(f"{WS4}{flag}" for flag in flags)
     print(
@@ -38,6 +40,7 @@ def print_usage(usage: str, flags: LStr) -> None:
 
 
 def parse_app_flag(argv: LStr, ndx: int) -> int:
+    """Parse application flag."""
     flag = argv[ndx]
     ndx += 1
     print(flag)
@@ -45,6 +48,7 @@ def parse_app_flag(argv: LStr, ndx: int) -> int:
 
 
 def parse() -> commands.AppArgs:
+    """Parse system arguments."""
     argv = sys.argv[1:]
 
     args = commands.AppArgs()

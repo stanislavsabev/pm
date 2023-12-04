@@ -1,3 +1,4 @@
+"""Database module."""
 import csv
 
 from pm import const
@@ -5,6 +6,7 @@ from pm.typedef import LStr, RecordTuple
 
 
 def create_db() -> str:
+    """Create database file."""
     db_file = const.DB_FILE
     if not db_file.exists():
         db_file.touch()
@@ -12,6 +14,7 @@ def create_db() -> str:
 
 
 def read_db() -> list[LStr]:
+    """Read database file."""
     db_file = const.DB_FILE
     with open(db_file, "r", encoding="utf-8") as fp:
         records = list(csv.reader(fp))
@@ -20,6 +23,7 @@ def read_db() -> list[LStr]:
 
 
 def add_record(record: RecordTuple) -> None:
+    """Write record to the database file."""
     db_file = const.DB_FILE
     with open(db_file, "a", encoding="utf-8") as fp:
         writer = csv.writer(fp)
