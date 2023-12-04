@@ -108,6 +108,8 @@ def read_local_config(path: Path) -> AnyDict:
 def write_local_config(path: Path, data: AnyDict | None = None) -> None:
     """Write to local config file."""
     local_config_file = path / const.LOCAL_CONFIG_NAME
+    if local_config_file.exists():
+        return
     if not data:
         data = {"description": "Empty", "lang": "na"}
     parser = ConfigParser()
