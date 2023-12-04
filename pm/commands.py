@@ -1,23 +1,19 @@
+import dataclasses
 import os
 import subprocess
+from pathlib import Path
 from typing import Protocol, Type
 
 from pm import config
+from pm import const
 from pm import proj_mgmt
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]
 FLAGS = ["-a", "--all"]
 
-WS4 = config.WS4
-WS8 = config.WS8
-
-
-class AppArgs:
-    flags: str | None = None
-    command: "ProtoCommand"
-    name: str | None = None
-    worktree: str | None = None
+WS4 = const.WS4
+WS8 = const.WS8
 
 
 class ProtoCommand(Protocol):
@@ -28,8 +24,16 @@ class ProtoCommand(Protocol):
     def parse_flag(self, argv: LStr, ndx: int) -> int:
         """Parse command flag."""
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: "AppArgs") -> None:
         """Run command."""
+
+
+@dataclasses.dataclass
+class AppArgs:
+    flags: str | None = None
+    name: str | None = None
+    command: ProtoCommand | None = None
+    worktree: str | None = None
 
 
 class Ls:
@@ -117,8 +121,58 @@ class Open:
             print(f"{out_=}, {err_=}")
 
 
+class Add:
+    usage = f"""add PROJECT [-s SHORT_NAME]
+
+{WS4}Add managed project
+
+{WS4}[PROJECT] {WS8}Project path, also used as name"""
+    short_usage: str = "Add managed project"
+    flags_usage: LStr = ["-s --short        SHORT_NAME"]
+
+    short_name: str | None = None
+
+    def parse_flag(self, argv: LStr, ndx: int) -> int:
+        flag = argv[ndx]
+        ndx += 1
+        if flag.lstrip("-") in "s/short".split("/"):
+            self.short_name = argv[ndx]
+            ndx += 1
+        else:
+            raise AttributeError(f"Unknown flag {flag} for command 'add'")
+        return ndx
+
+    def run(self, args: AppArgs) -> None:
+        if not args.name:
+            raise ValueError("Missing argument for `project` in command `add`")
+        name_arg = args.name
+        if name_arg == ".":
+            path = Path.cwd()
+        elif Path(name_arg).is_dir():
+            path = Path(name_arg)
+        else:
+            print(f"Cannot find project path '{name_arg}'")
+            return
+
+        if not self.short_name:
+            self.short_name = path.name
+
+        projects = proj_mgmt.get_projects()
+        for name, project in projects.items():
+            if project.name == path.name:
+                print(f"Project '{name}' already exists")
+                return
+            if project.short == self.short_name:
+                print(f"Short name '{self.short_name}' already exists")
+                return
+        proj_mgmt.write_proj(
+            name=path.name, short=self.short_name, path=path.absolute().parent
+        )
+
+
 COMMANDS: dict[str, Type[ProtoCommand]] = {
     "ls": Ls,
     "cd": Cd,
     "open": Open,
+    "add": Add,
 }

@@ -12,3 +12,5 @@ LStrDict = dict[str, list[str]]
 
 ProjOpt = Annotated[typing.Optional[str], typer.Argument(help="Project name")]
 WtOpt = Annotated[typing.Optional[str], typer.Argument(help="Worktree name")]
+
+RecordTuple = tuple[str, str | None, str | None]

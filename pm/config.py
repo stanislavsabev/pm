@@ -1,20 +1,15 @@
 import os
 import sys
 from configparser import ConfigParser
+from pathlib import Path
 
+from pm import const
+from pm import db
 from pm import util
 from pm.typedef import AnyDict, StrDict
 
-WS8 = " " * 8
-WS4 = " " * 4
-PROJECTS_DIR = os.environ["PROJECTS_DIR"]
-HOME_DIR = os.path.expanduser("~")
-PM_DIR = os.path.join(HOME_DIR, ".pm")
-DB_FILE = os.path.join(PM_DIR, "db.db")
-CONFIG_FILE = os.path.join(PM_DIR, "pmconf.ini")
-APP_NAME = "pm"
-DB_COLUMNS = "name", "short", "path"
-LOCAL_CONFIG_NAME = ".proj-cfg"
+PROJECTS_DIR = str(os.environ["PROJECTS_DIR"])
+CONFIG_FILE = Path(const.PM_DIR / "pmconf.ini")
 
 
 def dirs() -> StrDict:
@@ -30,11 +25,10 @@ def rjust() -> int:
 
 
 def _read_config() -> ConfigParser:
-    if not os.path.isdir(PM_DIR):
-        os.mkdir(PM_DIR)
-    if not os.path.isfile(CONFIG_FILE):
-        with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
-            pass
+    if not const.PM_DIR.is_dir():
+        const.PM_DIR.mkdir()
+    if not CONFIG_FILE.exists():
+        CONFIG_FILE.touch()
 
     parser = ConfigParser()
     parser.read(CONFIG_FILE)
@@ -66,28 +60,20 @@ def _parser() -> ConfigParser:
 
 
 def _add_default_proj_dirs(parser: ConfigParser) -> None:
-    if env_var := os.environ.get("PROJECTS_DIR"):
-        parser.add_section("dirs")
-        parser["dirs"]["projects_dir"] = env_var
+    parser.add_section("dirs")
+    parser["dirs"]["projects_dir"] = PROJECTS_DIR
 
 
 def _add_default_settings_section(parser: ConfigParser) -> None:
     parser.add_section("sett")
-    parser["sett"]["local"] = LOCAL_CONFIG_NAME
-    _create_db(parser=parser)
+    parser["sett"]["local"] = const.LOCAL_CONFIG_NAME
+    parser["sett"]["db"] = db.create_db()
 
 
 def _add_default_print_section(parser: ConfigParser) -> None:
     parser.add_section("print")
     parser["print"]["rjust"] = "8"
     parser["print"]["ljust"] = "25"
-
-
-def _create_db(parser: ConfigParser) -> None:
-    if not os.path.isfile(DB_FILE):
-        with open(DB_FILE, "w", encoding="utf-8"):
-            pass
-    parser["sett"]["db"] = DB_FILE
 
 
 def get_editor() -> str:
@@ -101,13 +87,26 @@ def get_editor() -> str:
 
 
 @util.timeit
-def read_local_config(loc: str) -> AnyDict:
-    local_config_file = os.path.join(loc, LOCAL_CONFIG_NAME)
+def read_local_config(path: Path) -> AnyDict:
+    local_config_file = path / const.LOCAL_CONFIG_NAME
     local_config = {}
 
-    if os.path.isfile(local_config_file):
+    if local_config_file.exists():
         with open(local_config_file, "r", encoding="utf-8") as fp:
             parser = ConfigParser()
             parser.read_file(fp)
             local_config = dict(parser["project"])
     return local_config
+
+
+def write_local_config(path: Path, data: AnyDict | None = None) -> None:
+    local_config_file = path / const.LOCAL_CONFIG_NAME
+    if not data:
+        data = {"description": "Empty", "lang": "na"}
+    parser = ConfigParser()
+    parser.add_section("project")
+    for key, val in data.items():
+        parser["project"][key] = val
+
+    with open(local_config_file, "a", encoding="utf-8") as fp:
+        parser.write(fp)

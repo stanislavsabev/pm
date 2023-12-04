@@ -1,11 +1,12 @@
 import asyncio
-import csv
+import dataclasses
 import os
-from dataclasses import dataclass
+from pathlib import Path
 
 from git.repo.base import Repo
 
 from pm import config
+from pm import db
 from pm import util
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
 
@@ -14,7 +15,7 @@ _projects: ProjDict = {}
 _non_managed: LStrDict = {}
 
 
-@dataclass
+@dataclasses.dataclass
 class Proj:
     short: str
     name: str
@@ -26,14 +27,7 @@ class Proj:
     bare: bool = False
 
 
-def read_db(db_file: str) -> list[LStr]:
-    with open(db_file, "r", encoding="utf-8") as fp:
-        records = list(csv.reader(fp))
-    assert tuple(records[0]) == config.DB_COLUMNS
-    return records[1:]
-
-
-def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
+def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
     repo = Repo(path)
     bare = repo.bare
     active_branch = repo.active_branch
@@ -44,11 +38,11 @@ def read_repo(path: str) -> tuple[LStr, str, bool, LStr]:
     return branches, active_branch.name, bare, worktrees
 
 
-@util.timeit
-async def read_proj(path: str, short: str, name: str) -> Proj:
-    loc = os.path.join(path, name)
-    local_config = config.read_local_config(loc)
-    branches, active_branch, bare, worktrees = read_repo(loc)
+# @util.timeit
+async def read_proj(name: str, short: str, path: str) -> Proj:
+    proj_path = Path(path) / name
+    local_config = config.read_local_config(path=proj_path)
+    branches, active_branch, bare, worktrees = read_repo(proj_path)
     proj = Proj(
         name=name,
         short=short,
@@ -62,17 +56,25 @@ async def read_proj(path: str, short: str, name: str) -> Proj:
     return proj
 
 
+# @util.timeit
+def write_proj(name: str, short: str, path: Path) -> None:
+    config.write_local_config(path / name)
+    proj_path: str | None = None if path == Path(config.PROJECTS_DIR) else str(path)
+    short_name: str | None = None if name == short else short
+    db.add_record(record=(name, short_name, proj_path))
+
+
 @util.timeit
 async def read_managed() -> None:
     global _projects
-    records = read_db(db_file=config.DB_FILE)
+    records = db.read_db()
     tasks = []
     for name, short, path in records:
         if not path:
             path = config.PROJECTS_DIR
         if not short:
             short = name
-        task = asyncio.create_task(read_proj(path, short, name))
+        task = asyncio.create_task(read_proj(name=name, short=short, path=path))
         tasks.append((name, task))
 
     for name, task in tasks:
