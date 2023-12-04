@@ -9,14 +9,7 @@ black==23.10.1
     #   -r requirements/requirements-dev.in
     #   flake8-black
 click==8.1.7
-    # via
-    #   -r requirements/requirements.txt
-    #   black
-    #   typer
-colorama==0.4.6
-    # via
-    #   -r requirements/requirements.txt
-    #   typer
+    # via black
 coverage==7.3.2
     # via -r requirements/requirements-dev.in
 flake8==6.1.0
@@ -44,16 +37,8 @@ iniconfig==2.0.0
     # via pytest
 isort==5.12.0
     # via -r requirements/requirements-dev.in
-markdown-it-py==3.0.0
-    # via
-    #   -r requirements/requirements.txt
-    #   rich
 mccabe==0.7.0
     # via flake8
-mdurl==0.1.2
-    # via
-    #   -r requirements/requirements.txt
-    #   markdown-it-py
 mock==5.1.0
     # via -r requirements/requirements-dev.in
 mypy==1.6.1
@@ -78,37 +63,18 @@ pydocstyle==6.3.0
     # via flake8-docstrings
 pyflakes==3.1.0
     # via flake8
-pygments==2.16.1
-    # via
-    #   -r requirements/requirements.txt
-    #   rich
 pytest==7.4.3
     # via -r requirements/requirements-dev.in
-rich==13.7.0
-    # via
-    #   -r requirements/requirements.txt
-    #   typer
-shellingham==1.5.4
-    # via
-    #   -r requirements/requirements.txt
-    #   typer
 smmap==5.0.1
     # via
     #   -r requirements/requirements.txt
     #   gitdb
 snowballstemmer==2.2.0
     # via pydocstyle
-typer[all]==0.9.0
-    # via
-    #   -r requirements/requirements.txt
-    #   typer
 types-mock==5.1.0.2
     # via -r requirements/requirements-dev.in
 typing-extensions==4.8.0
-    # via
-    #   -r requirements/requirements.txt
-    #   mypy
-    #   typer
+    # via mypy
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
