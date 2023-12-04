@@ -5,7 +5,7 @@ List and manage available projects.
 ## Installation
 
 ```shell
-> pip install git+https://github.com/stanislavsabev/pm.git@main
+pip install git+https://github.com/stanislavsabev/pm.git@main
 ```
 
 ## Usage
