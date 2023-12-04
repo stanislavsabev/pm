@@ -1,5 +1,4 @@
 import dataclasses
-import os
 import subprocess
 from pathlib import Path
 from typing import Protocol, Type
@@ -52,7 +51,7 @@ class Ls:
         if flag.lstrip("-") in "a/all".split("/"):
             self.all_flag = True
         else:
-            raise AttributeError(f"Unknown flag {flag} for command 'ls'")
+            raise ValueError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
     def run(self, args: AppArgs) -> None:
@@ -100,7 +99,7 @@ class Open:
         if flag.lstrip("-") in "a/all".split("/"):
             self.all_flag = True
         else:
-            raise AttributeError(f"Unknown flag {flag} for command 'ls'")
+            raise ValueError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
     def run(self, args: AppArgs) -> None:
@@ -111,8 +110,8 @@ class Open:
         if not path:
             path = proj_mgmt.find_non_managed(name, worktree)
 
-        if not path or not os.path.isdir(path):
-            raise ValueError(f"Could not find project path `{name}`")
+        if not path or not path.is_dir():
+            raise FileNotFoundError(f"Could not find project path `{name}`")
 
         editor = config.get_editor()
         cmd = subprocess.Popen(f"{editor} {path}", shell=True)
@@ -139,7 +138,7 @@ class Add:
             self.short_name = argv[ndx]
             ndx += 1
         else:
-            raise AttributeError(f"Unknown flag {flag} for command 'add'")
+            raise ValueError(f"Unknown flag {flag} for command 'add'")
         return ndx
 
     def run(self, args: AppArgs) -> None:
@@ -151,8 +150,7 @@ class Add:
         elif Path(name_arg).is_dir():
             path = Path(name_arg)
         else:
-            print(f"Cannot find project path '{name_arg}'")
-            return
+            raise FileNotFoundError(f"Cannot find project path '{name_arg}'")
 
         if not self.short_name:
             self.short_name = path.name
@@ -160,11 +158,9 @@ class Add:
         projects = proj_mgmt.get_projects()
         for name, project in projects.items():
             if project.name == path.name:
-                print(f"Project '{name}' already exists")
-                return
+                raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
-                print(f"Short name '{self.short_name}' already exists")
-                return
+                raise NameError(f"Short name '{self.short_name}' already exists")
         proj_mgmt.write_proj(
             name=path.name, short=self.short_name, path=path.absolute().parent
         )

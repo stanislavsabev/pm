@@ -158,25 +158,29 @@ def print_non_managed(dirs: StrDict) -> None:
                 print(f" {project}", end="\n")
 
 
-def find_managed(name: str, worktree: str | None = None) -> str | None:
+def find_managed(name: str, worktree: str | None = None) -> Path | None:
     managed = get_projects()
     for proj in managed.values():
         if name in [proj.short, proj.name]:
-            path = os.path.join(proj.path, proj.name)
-            if worktree and worktree in proj.worktrees:  # type: ignore
-                path = os.path.join(path, worktree)
+            path = Path(proj.path) / proj.name
+            if worktree:
+                if worktree not in proj.worktrees:  # type: ignore
+                    raise ValueError(
+                        f"Cannot find worktree `{worktree}` in project `{proj.name}`"
+                    )
+                path = path.joinpath(worktree)
             return path
     return None
 
 
-def find_non_managed(name: str, worktree: str | None = None) -> str | None:
+def find_non_managed(name: str, worktree: str | None = None) -> Path | None:
     non_managed = get_non_managed()
     dirs = config.dirs()
     for group, projects in non_managed.items():
         for proj_name in projects:
             if name == proj_name:
-                path = os.path.join(dirs[group], proj_name)
+                path = Path(dirs[group]).joinpath(proj_name)
                 if worktree:
-                    path = os.path.join(path, worktree)
+                    path = path.joinpath(worktree)
                 return path
     return None
