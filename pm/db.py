@@ -25,6 +25,6 @@ def read_db() -> list[LStr]:
 def add_record(record: RecordTuple) -> None:
     """Write record to the database file."""
     db_file = const.DB_FILE
-    with open(db_file, "a", encoding="utf-8") as fp:
+    with db_file.open("a", newline="", encoding="utf-8") as fp:
         writer = csv.writer(fp)
         writer.writerow(record)
