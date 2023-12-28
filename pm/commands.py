@@ -103,7 +103,7 @@ class Cd:
         projects = proj_mgmt.get_projects()
 
         if not config.PLATFORM == config.WINDOWS:
-            print(f"Command not supported on '{config.PLATFORM}")
+            print(f"Command not supported on '{config.PLATFORM}'")
             return
 
         for _, proj in projects.items():

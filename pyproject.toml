@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
     name = "pm"
-    description = "Build tool for windows, similar to make on Linux"
-version = "0.2.0"
+    description = "List and manage available projects"
+version = "0.2.0dev"
 readme = "README.md"
 authors = [
     {name = "Stanislav Sabev", email = "stanislav.sabev@gmail.com"},
@@ -29,7 +29,6 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-
 
 [project.optional-dependencies]
 dev = [
