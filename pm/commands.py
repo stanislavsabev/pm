@@ -31,7 +31,11 @@ class ProtoCommand(Protocol):
     flags_usage: LStr
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
 
     def run(self, args: "AppArgs") -> None:
         """Run command."""
@@ -60,7 +64,11 @@ class Ls:
     all_flag = False
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "a/all".split("/"):
@@ -92,10 +100,13 @@ class Cd:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         del argv
-        del ndx
-        raise NotImplementedError
+        return ndx
 
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
@@ -131,13 +142,12 @@ class Open:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
-        flag = argv[ndx]
-        ndx += 1
-        if flag.lstrip("-") in "a/all".split("/"):
-            self.all_flag = True
-        else:
-            raise ValueError(f"Unknown flag {flag} for command 'ls'")
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
+        del argv
         return ndx
 
     def run(self, args: AppArgs) -> None:
@@ -173,7 +183,11 @@ class Add:
     short_name: str | None = None
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "s/short".split("/"):
