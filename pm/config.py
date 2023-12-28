@@ -13,6 +13,21 @@ PROJECTS_DIR = str(os.environ["PROJECTS_DIR"])
 CONFIG_FILE = Path(const.PM_DIR / "pmconf.ini")
 
 
+WINDOWS = "Windows"
+LINUX = "Linux"
+MACOS = "Darwin"
+
+PLATFORM = ""
+if "win32" == sys.platform:
+    PLATFORM = WINDOWS
+elif "linux" in sys.platform:
+    PLATFORM = LINUX
+elif "Darwin" == sys.platform:
+    PLATFORM = MACOS
+else:
+    raise EnvironmentError(f"Unsupported platform {sys.platform}")
+
+
 def dirs() -> StrDict:
     """Project directories saved in the configuration."""
     return dict(_parser()["dirs"])
@@ -83,9 +98,9 @@ def _add_default_print_section(parser: ConfigParser) -> None:
 def get_editor() -> str:
     """Get default editor app."""
     ed = "code"
-    if "win32" == sys.platform:
+    if PLATFORM == WINDOWS:
         ed = r"%EDITOR%"
-    elif "linux" in sys.platform:
+    else:
         ed = r"$EDITOR"
     editor = os.path.expandvars(ed)
     return editor

@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PROJ_NAME=pm
+PROJ_DIR=pm
 VENV_PATH=$$(cat .python-cfg)
 
 # If the first argument is "rename"...
@@ -17,10 +17,10 @@ help: ## Show this message
 .PHONY: rename
 rename: ## Rename this project. Args: <new-proj-name>
 	@echo renaming project to: $(RUN_ARGS)
-	@mv src/$(PROJ_NAME) $(RUN_ARGS)
+	@mv src/$(PROJ_DIR) $(RUN_ARGS)
 	@for f in $$(find . -name "*.py") Makefile README.md pyproject.toml; \
 		do \
-		[ -f "$$f" ] && sed -i 's/$(PROJ_NAME)/$(RUN_ARGS)/g' $$f; \
+		[ -f "$$f" ] && sed -i 's/$(PROJ_DIR)/$(RUN_ARGS)/g' $$f; \
 	done
 
 .PHONY: init
@@ -49,7 +49,7 @@ run: ## Run example
 .PHONY: delete-venv
 delete-venv: ## Delete virtual environment
 	rm -rf $(VENV_PATH)
-	rm -rf $(PROJ_NAME).egg-info
+	rm -rf $(PROJ_DIR).egg-info
 
 .PHONY: clean
 clean: ## Clean cache
@@ -64,29 +64,37 @@ open-cfg: ## Open config
 	code ~/.pm
 
 .PHONY: format
-format:
-	black $(PROJ_NAME)
-	isort $(PROJ_NAME)
+format: ## Format with black and isort
+	black $(PROJ_DIR)
+	isort $(PROJ_DIR)
 
 .PHONY: check
-check:
-	black --check $(PROJ_NAME) \
-	& isort --check $(PROJ_NAME) \
-	& flake8 $(PROJ_NAME) \
-	& mypy $(PROJ_NAME)
+check: ## Check with mypy and flake8
+	flake8 $(PROJ_DIR)
+	mypy $(PROJ_DIR)
+
+.PHONY: checkall
+checkall: format check ## Format and check with mypy and flake8
+
+.PHONY: build
+build: format check test ## Format and check with mypy and flake8
+
+.PHONY: test
+test: ## Run pytest with coverage
+	pytest
 
 .PHONY: package
 package: ## Package the project into .zip file
-	rm -rf .$(PROJ_NAME)
-	mkdir .$(PROJ_NAME)
-	cp Makefile .$(PROJ_NAME)/
-	cp LICENSE .$(PROJ_NAME)/
-	cp pyproject.toml .$(PROJ_NAME)/
-	cp requirements-dev.txt .$(PROJ_NAME)/
-	cp requirements.txt .$(PROJ_NAME)/
-	cp setup.cfg .$(PROJ_NAME)/
-	cp tox.ini .$(PROJ_NAME)/
-	find ./src/$(PACKAGE_NAME) -name '*.py' -exec cp --parents "{}" .$(PROJ_NAME)/ \;
-	find ./tests/$(PACKAGE_NAME) -name '*.py' -exec cp --parents "{}" .$(PROJ_NAME)/ \;
-	cd .$(PROJ_NAME) && zip -r ../$(PROJ_NAME).zip .
-	rm -rf .$(PROJ_NAME)
+	rm -rf .$(PROJ_DIR)
+	mkdir .$(PROJ_DIR)
+	cp Makefile .$(PROJ_DIR)/
+	cp LICENSE .$(PROJ_DIR)/
+	cp pyproject.toml .$(PROJ_DIR)/
+	cp requirements-dev.txt .$(PROJ_DIR)/
+	cp requirements.txt .$(PROJ_DIR)/
+	cp setup.cfg .$(PROJ_DIR)/
+	cp tox.ini .$(PROJ_DIR)/
+	find ./src/$(PACKAGE_NAME) -name '*.py' -exec cp --parents "{}" .$(PROJ_DIR)/ \;
+	find ./tests/$(PACKAGE_NAME) -name '*.py' -exec cp --parents "{}" .$(PROJ_DIR)/ \;
+	cd .$(PROJ_DIR) && zip -r ../$(PROJ_DIR).zip .
+	rm -rf .$(PROJ_DIR)

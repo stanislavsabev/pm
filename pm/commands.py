@@ -1,5 +1,6 @@
 """Commands module."""
 import dataclasses
+import os
 import subprocess
 from pathlib import Path
 from typing import Protocol, Type
@@ -30,7 +31,11 @@ class ProtoCommand(Protocol):
     flags_usage: LStr
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
 
     def run(self, args: "AppArgs") -> None:
         """Run command."""
@@ -59,7 +64,11 @@ class Ls:
     all_flag = False
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "a/all".split("/"):
@@ -91,15 +100,33 @@ class Cd:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         del argv
-        del ndx
-        raise NotImplementedError
+        return ndx
 
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
-        proj, wt = args.name, args.worktree
-        print(f"cd {proj=} {wt=}")
+        name, wt = args.name, args.worktree
+        projects = proj_mgmt.get_projects()
+
+        if not config.PLATFORM == config.WINDOWS:
+            print(f"Command not supported on '{config.PLATFORM}'")
+            return
+
+        for _, proj in projects.items():
+            if proj.short == name or proj.name == name:
+                break
+        else:
+            raise ValueError(f"Cannot find project {name}")
+
+        path = Path(proj.path) / proj.name
+        if wt:
+            path = path.joinpath(wt)
+        os.system(f"start wt -d {path}")
 
 
 class Open:
@@ -115,13 +142,12 @@ class Open:
     flags_usage: LStr = []
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
-        flag = argv[ndx]
-        ndx += 1
-        if flag.lstrip("-") in "a/all".split("/"):
-            self.all_flag = True
-        else:
-            raise ValueError(f"Unknown flag {flag} for command 'ls'")
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
+        del argv
         return ndx
 
     def run(self, args: AppArgs) -> None:
@@ -157,7 +183,11 @@ class Add:
     short_name: str | None = None
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option."""
+        """Parse command option.
+
+        Returns:
+            An int, last index that was parsed.
+        """
         flag = argv[ndx]
         ndx += 1
         if flag.lstrip("-") in "s/short".split("/"):
