@@ -83,6 +83,10 @@ build: format check test ## Format and check with mypy and flake8
 test: ## Run pytest with coverage
 	pytest
 
+.PHONY: gh
+gh: ## Open remote in browser
+	firefox https://github.com/stanislavsabev/pm
+
 .PHONY: package
 package: ## Package the project into .zip file
 	rm -rf .$(PROJ_DIR)
