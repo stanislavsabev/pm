@@ -1,5 +1,6 @@
 """Commands module."""
 import dataclasses
+import os
 import subprocess
 from pathlib import Path
 from typing import Protocol, Type
@@ -98,8 +99,23 @@ class Cd:
 
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
-        proj, wt = args.name, args.worktree
-        print(f"cd {proj=} {wt=}")
+        name, wt = args.name, args.worktree
+        projects = proj_mgmt.get_projects()
+
+        if not config.PLATFORM == config.WINDOWS:
+            print(f"Command not supported on '{config.PLATFORM}")
+            return
+
+        for _, proj in projects.items():
+            if proj.short == name or proj.name == name:
+                break
+        else:
+            raise ValueError(f"Cannot find project {name}")
+
+        path = Path(proj.path) / proj.name
+        if wt:
+            path = path.joinpath(wt)
+        os.system(f"start wt -d {path}")
 
 
 class Open:
