@@ -152,7 +152,7 @@ def print_project(proj: Proj) -> None:
     if len(name) > ljust:
         name = ".." + name[-ljust + 2 :]
     print(
-        "{short:>{rjust}} | {name:<{ljust}} : {branches}".format(
+        "{short:<{rjust}} | {name:<{ljust}} : {branches}".format(
             short=proj.short,
             rjust=rjust,
             ljust=ljust,
@@ -166,7 +166,7 @@ def print_project(proj: Proj) -> None:
 def print_managed(projects: ProjDict) -> None:
     """Print formatted info for the managed projects."""
     print("> Projects:\n")
-    for project in sorted(projects.values(), key=lambda p: p.name.lower()):
+    for project in sorted(projects.values(), key=lambda p: p.short.lower()):
         print_project(project)
 
 
