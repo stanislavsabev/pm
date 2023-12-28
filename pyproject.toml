@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
     name = "pm"
     description = "Build tool for windows, similar to make on Linux"
-version = "0.0.1"
+version = "0.2.0"
 readme = "README.md"
 authors = [
     {name = "Stanislav Sabev", email = "stanislav.sabev@gmail.com"},
