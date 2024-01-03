@@ -5,9 +5,9 @@ import subprocess
 from pathlib import Path
 from typing import Protocol, Type
 
-from pm import config
+from pm import config, db
 from pm import const
-from pm import proj_mgmt
+from pm import proj_man
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]
@@ -80,11 +80,11 @@ class Ls:
     def run(self, args: AppArgs) -> None:
         """Run ls command."""
         del args
-        projects = proj_mgmt.get_projects()
-        proj_mgmt.print_managed(projects)
+        projects = proj_man.get_projects()
+        proj_man.print_managed(projects)
 
         if self.all_flag:
-            proj_mgmt.print_non_managed(config.dirs())
+            proj_man.print_non_managed(config.dirs())
 
 
 class Cd:
@@ -111,7 +111,7 @@ class Cd:
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
         name, wt = args.name, args.worktree
-        projects = proj_mgmt.get_projects()
+        projects = proj_man.get_projects()
 
         if not config.PLATFORM == config.WINDOWS:
             print(f"Command not supported on '{config.PLATFORM}'")
@@ -155,9 +155,9 @@ class Open:
         name, worktree = args.name, args.worktree
         if name is None:
             raise ValueError("Missing argument for `name` in command `open`")
-        path = proj_mgmt.find_managed(name, worktree)
+        path = proj_man.find_managed(name, worktree)
         if not path:
-            path = proj_mgmt.find_non_managed(name, worktree)
+            path = proj_man.find_non_managed(name, worktree)
 
         if not path or not path.is_dir():
             raise FileNotFoundError(f"Could not find project path `{name}`")
@@ -212,15 +212,37 @@ class Add:
         if not self.short_name:
             self.short_name = path.name
 
-        projects = proj_mgmt.get_projects()
+        projects = proj_man.get_projects()
         for name, project in projects.items():
             if project.name == path.name:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
-        proj_mgmt.add_new_proj(
+        proj_man.add_new_proj(
             name=path.name, short=self.short_name, path=path.absolute().parent
         )
+
+
+class Init:
+    """Handler for the init command."""
+
+    usage = f"""init
+
+{WS4}Init pm
+"""
+    short_usage: str = "Init pm"
+    flags_usage: LStr = []
+
+    def parse_flag(self, argv: LStr, ndx: int) -> int:
+        """Parse command option."""
+        del argv
+        del ndx
+        raise NotImplementedError
+
+    def run(self, args: AppArgs) -> None:
+        """Run cd command."""
+        config.create_config()
+        db.create_db()
 
 
 COMMANDS: dict[str, Type[ProtoCommand]] = {
@@ -228,4 +250,5 @@ COMMANDS: dict[str, Type[ProtoCommand]] = {
     "cd": Cd,
     "open": Open,
     "add": Add,
+    "init": Init,
 }

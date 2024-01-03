@@ -5,18 +5,21 @@ from pm import const
 from pm.typedef import LStr, RecordTuple
 
 
-def create_db() -> str:
+def create_db() -> None:
     """Create database file."""
     db_file = const.DB_FILE
     if not db_file.exists():
-        db_file.touch()
-    return str(db_file.absolute())
+        db_file.parent.mkdir(parents=True, exist_ok=True)
+        add_record(const.DB_COLUMNS)
 
 
 def read_db() -> list[LStr]:
     """Read database file."""
-    db_file = const.DB_FILE
-    with open(db_file, "r", encoding="utf-8") as fp:
+    if not const.DB_FILE.exists():
+        raise FileNotFoundError(
+            "Cannot find database file. Maybe you forgot to execute `pm init`?"
+        )
+    with const.DB_FILE.open("r", encoding="utf-8") as fp:
         records = list(csv.reader(fp))
     assert tuple(records[0]) == const.DB_COLUMNS
     return records[1:]
@@ -24,7 +27,6 @@ def read_db() -> list[LStr]:
 
 def add_record(record: RecordTuple) -> None:
     """Write record to the database file."""
-    db_file = const.DB_FILE
-    with db_file.open("a", newline="", encoding="utf-8") as fp:
+    with const.DB_FILE.open("a", newline="", encoding="utf-8") as fp:
         writer = csv.writer(fp)
         writer.writerow(record)
