@@ -3,7 +3,7 @@ import logging
 import sys
 import traceback
 
-from pm import argparse
+from pm import argparse, config
 from pm import commands
 from pm import const
 
@@ -21,6 +21,7 @@ def app() -> None:
     """Application entry point."""
     try:
         args: commands.AppArgs = argparse.parse()
+        config.get_config()
         if args.command:
             logger.debug(f"Running command {args.command}")
             args.command.run(args)
