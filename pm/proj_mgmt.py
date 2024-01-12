@@ -65,6 +65,17 @@ def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
 async def read_proj(name: str, short: str, path: str) -> Proj:
     """Read project local config and git repo."""
     proj_path = Path(path) / name
+    if not proj_path.exists():
+        return Proj(
+            name=name,
+            short="<missing>",
+            bare=False,
+            path=path,
+            local_config=None,
+            worktrees=None,
+            branches=[],
+            active_branch="",
+        )
     local_config = config.read_local_config(path=proj_path)
     branches, active_branch, bare, worktrees = read_repo(proj_path)
     proj = Proj(
