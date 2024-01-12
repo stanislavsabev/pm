@@ -31,7 +31,7 @@ class Proj:
         branches: list with the project branches
         active_branch: str, the active branch, if defined
         worktrees: list with the project worktrees
-        bare: bool, True if the project repository is bare.
+        is_bare: bool, True if the project repository is bare.
     """
 
     short: str
@@ -41,7 +41,7 @@ class Proj:
     branches: LStr
     active_branch: str
     worktrees: LStr | None
-    bare: bool = False
+    is_bare: bool = False
 
 
 def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
@@ -69,7 +69,7 @@ async def read_proj(name: str, short: str, path: str) -> Proj:
         return Proj(
             name=name,
             short="<missing>",
-            bare=False,
+            is_bare=False,
             path=path,
             local_config=None,
             worktrees=None,
@@ -77,11 +77,11 @@ async def read_proj(name: str, short: str, path: str) -> Proj:
             active_branch="",
         )
     local_config = config.read_local_config(path=proj_path)
-    branches, active_branch, bare, worktrees = read_repo(proj_path)
+    branches, active_branch, is_bare, worktrees = read_repo(proj_path)
     proj = Proj(
         name=name,
         short=short,
-        bare=bare,
+        is_bare=is_bare,
         path=path,
         local_config=local_config,
         worktrees=worktrees,
@@ -167,11 +167,12 @@ def print_project(proj: Proj) -> None:
     if len(name) > ljust:
         name = ".." + name[-ljust + 2 :]
     print(
-        "{short:<{rjust}} | {name:<{ljust}} : {branches}".format(
+        "{short:<{rjust}} | {name:<{ljust}} {bare}: {branches}".format(
             short=proj.short,
             rjust=rjust,
             ljust=ljust,
             name=name,
+            bare="b" if proj.is_bare else " ",
             branches=" ".join(formatted_branches),
         )
     )
