@@ -1,6 +1,7 @@
 """Project management module."""
 import asyncio
 import dataclasses
+import logging
 import os
 from pathlib import Path
 
@@ -10,6 +11,8 @@ from pm import config
 from pm import db
 from pm import util
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
+
+logger = logging.getLogger("pm")
 
 ProjDict = dict[str, "Proj"]
 _projects: ProjDict = {}
@@ -48,6 +51,7 @@ def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
         A tuple with branches, active_branch, is_bare_repo and worktrees
     """
     repo = Repo(path)
+    logger.debug(f"repo: {repo}")
     is_bare_repo = repo.bare
     active_branch = repo.active_branch
     branches: LStr = [b.name for b in repo.branches]  # type: ignore
