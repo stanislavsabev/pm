@@ -20,7 +20,7 @@ def read_db() -> list[LStr]:
             "Cannot find database file. Maybe you forgot to execute `pm init`?"
         )
     with const.DB_FILE.open("r", encoding="utf-8") as fp:
-        records = list(csv.reader(fp))
+        records = list(filter(None, csv.reader(fp)))
     assert tuple(records[0]) == const.DB_COLUMNS
     return records[1:]
 
