@@ -2,6 +2,7 @@
 import asyncio
 import dataclasses
 import logging
+from functools import cache
 import os
 from pathlib import Path
 
@@ -9,14 +10,13 @@ from git.repo.base import Repo
 
 from pm import config
 from pm import db
-from pm import util
+
+# from pm import util
 from pm.typedef import AnyDict, LStr, LStrDict, StrDict
 
 logger = logging.getLogger("pm")
 
 ProjDict = dict[str, "Proj"]
-_projects: ProjDict = {}
-_non_managed: LStrDict = {}
 
 
 @dataclasses.dataclass
@@ -100,13 +100,12 @@ def add_new_proj(name: str, short: str, path: Path) -> None:
     db.add_record(record=(name, short_name, proj_path))
 
 
-@util.timeit
-async def read_managed() -> None:
+# @util.timeit
+async def read_managed(db_records: list[LStr]) -> ProjDict:
     """Read managed projects from the database and each project's git repository."""
-    global _projects
-    records = db.read_db()
+    projects = {}
     tasks = []
-    for name, short, path in records:
+    for name, short, path in db_records:
         if not path:
             path = config.PROJECTS_DIR
         if not short:
@@ -115,10 +114,11 @@ async def read_managed() -> None:
         tasks.append((name, task))
 
     for name, task in tasks:
-        _projects[name] = await task
+        projects[name] = await task
+    return projects
 
 
-@util.timeit
+# @util.timeit
 def read_non_managed() -> LStrDict:
     """Read non-managed projects directories."""
     dirs = config.dirs()
@@ -133,22 +133,20 @@ def read_non_managed() -> LStrDict:
 
 def get_projects() -> ProjDict:
     """Cache function for the managed projects."""
-    global _projects
-    if not _projects:
-        asyncio.run(read_managed())
-    return _projects
+    if records := db.read_db():
+        return asyncio.run(read_managed(db_records=records))
+    return {}
 
 
-@util.timeit
+# @util.timeit
+@cache
 def get_non_managed() -> LStrDict:
     """Cache function for the non-managed projects."""
-    global _non_managed
-    if not _non_managed:
-        _non_managed = read_non_managed()
-    return _non_managed
+    projects = read_non_managed()
+    return projects
 
 
-@util.timeit
+# @util.timeit
 def print_project(proj: Proj) -> None:
     """Print project formatted info."""
     formatted_branches = []
@@ -178,18 +176,24 @@ def print_project(proj: Proj) -> None:
     )
 
 
-@util.timeit
+# @util.timeit
 def print_managed(projects: ProjDict) -> None:
     """Print formatted info for the managed projects."""
     print("> Projects:\n")
-    for project in sorted(projects.values(), key=lambda p: p.short.lower()):
+    if not projects:
+        print("  na")
+        return
+    for project in sorted(projects.values(), key=lambda p: p.name.lower()):
         print_project(project)
 
 
-@util.timeit
+# @util.timeit
 def print_non_managed(dirs: StrDict) -> None:
     """Print formatted info for the non-managed projects."""
     non_managed = get_non_managed()
+    if not non_managed:
+        return
+
     for group in dirs:
         projects = non_managed[group]
         print(f"\n> {group}:\n")

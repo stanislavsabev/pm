@@ -1,12 +1,11 @@
 """Project configuration."""
+from functools import cache
 import os
 import sys
 from configparser import ConfigParser
 from pathlib import Path
 
 from pm import const
-from pm import db
-from pm import util
 from pm.typedef import AnyDict, StrDict
 
 PROJECTS_DIR = str(os.environ["PROJECTS_DIR"])
@@ -30,52 +29,43 @@ else:
 
 def dirs() -> StrDict:
     """Project directories saved in the configuration."""
-    return dict(_parser()["dirs"])
+    return dict(get_config()["dirs"])
 
 
 def ljust() -> int:
     """Text left justify configuration."""
-    return int(_parser()["print"]["ljust"])
+    return int(get_config()["print"]["ljust"])
 
 
 def rjust() -> int:
     """Text right justify configuration."""
-    return int(_parser()["print"]["rjust"])
+    return int(get_config()["print"]["rjust"])
 
 
-def _read_config() -> ConfigParser:
-    if not const.PM_DIR.is_dir():
-        const.PM_DIR.mkdir()
-    if not CONFIG_FILE.exists():
-        CONFIG_FILE.touch()
-
+@cache
+def get_config() -> ConfigParser:
     parser = ConfigParser()
+
+    if not const.PM_DIR.is_dir() or not CONFIG_FILE.exists():
+        raise FileNotFoundError(
+            "Cannot find `pm` config. Maybe you forgot to execute `pm init`?"
+        )
     parser.read(CONFIG_FILE)
-    write = False
-    if "dirs" not in parser.sections():
-        _add_default_proj_dirs(parser=parser)
-        write = True
-    if "sett" not in parser.sections():
-        _add_default_settings_section(parser=parser)
-        write = True
-    if "print" not in parser.sections():
-        _add_default_print_section(parser=parser)
-        write = True
-    if write:
-        with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
-            parser.write(fp)
     return parser
 
 
-__parser: ConfigParser | None = None
+def create_config():
 
-
-def _parser() -> ConfigParser:
-    global __parser
-    if __parser:
-        return __parser
-    __parser = _read_config()
-    return __parser
+    parser = ConfigParser()
+    _add_default_proj_dirs(parser=parser)
+    _add_default_settings_section(parser=parser)
+    _add_default_print_section(parser=parser)
+    
+    const.PM_DIR.mkdir(exist_ok=True)
+    if not CONFIG_FILE.exists():
+        CONFIG_FILE.touch()
+    with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
+        parser.write(fp)
 
 
 def _add_default_proj_dirs(parser: ConfigParser) -> None:
@@ -86,7 +76,7 @@ def _add_default_proj_dirs(parser: ConfigParser) -> None:
 def _add_default_settings_section(parser: ConfigParser) -> None:
     parser.add_section("sett")
     parser["sett"]["local"] = const.LOCAL_CONFIG_NAME
-    parser["sett"]["db"] = db.create_db()
+    parser["sett"]["db"] = str(const.DB_FILE.absolute())
 
 
 def _add_default_print_section(parser: ConfigParser) -> None:
@@ -106,7 +96,7 @@ def get_editor() -> str:
     return editor
 
 
-@util.timeit
+# @util.timeit
 def read_local_config(path: Path) -> AnyDict:
     """Read local config file."""
     local_config_file = path / const.LOCAL_CONFIG_NAME
