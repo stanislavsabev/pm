@@ -44,6 +44,7 @@ def rjust() -> int:
 
 @cache
 def get_config() -> ConfigParser:
+    """Read config and return a ConfigParser."""
     parser = ConfigParser()
 
     if not const.PM_DIR.is_dir() or not CONFIG_FILE.exists():
@@ -54,13 +55,13 @@ def get_config() -> ConfigParser:
     return parser
 
 
-def create_config():
-
+def create_config() -> None:
+    """Create config data."""
     parser = ConfigParser()
     _add_default_proj_dirs(parser=parser)
     _add_default_settings_section(parser=parser)
     _add_default_print_section(parser=parser)
-    
+
     const.PM_DIR.mkdir(exist_ok=True)
     if not CONFIG_FILE.exists():
         CONFIG_FILE.touch()

@@ -8,6 +8,7 @@ from typing import Protocol, Type
 from pm import config, db
 from pm import const
 from pm import proj_man
+from pm import proj_print
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]
@@ -82,10 +83,10 @@ class Ls:
         del args
         config.get_config()
         projects = proj_man.get_projects()
-        proj_man.print_managed(projects)
+        proj_print.print_managed(projects)
 
         if self.all_flag:
-            proj_man.print_non_managed(config.dirs())
+            proj_print.print_non_managed(config.dirs())
 
 
 class Cd:
