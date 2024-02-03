@@ -21,7 +21,6 @@ def app() -> None:
     """Application entry point."""
     try:
         args: commands.AppArgs = argparse.parse()
-        config.get_config()
         if args.command:
             logger.debug(f"Running command {args.command}")
             args.command.run(args)

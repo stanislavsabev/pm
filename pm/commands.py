@@ -80,6 +80,7 @@ class Ls:
     def run(self, args: AppArgs) -> None:
         """Run ls command."""
         del args
+        config.get_config()
         projects = proj_man.get_projects()
         proj_man.print_managed(projects)
 
@@ -110,6 +111,7 @@ class Cd:
 
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
+        config.get_config()
         name, wt = args.name, args.worktree
         projects = proj_man.get_projects()
 
@@ -152,6 +154,7 @@ class Open:
 
     def run(self, args: AppArgs) -> None:
         """Run open command."""
+        config.get_config()
         name, worktree = args.name, args.worktree
         if name is None:
             raise ValueError("Missing argument for `name` in command `open`")
@@ -199,6 +202,7 @@ class Add:
 
     def run(self, args: AppArgs) -> None:
         """Run add command."""
+        config.get_config()
         if not args.name:
             raise ValueError("Missing argument for `project` in command `add`")
         name_arg = args.name
@@ -241,6 +245,7 @@ class Init:
 
     def run(self, args: AppArgs) -> None:
         """Run cd command."""
+        del args
         config.create_config()
         db.create_db()
 

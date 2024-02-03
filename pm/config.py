@@ -55,14 +55,15 @@ def get_config() -> ConfigParser:
 
 
 def create_config():
-    const.PM_DIR.mkdir(exist_ok=True)
-    if not CONFIG_FILE.exists():
-        CONFIG_FILE.touch()
 
     parser = ConfigParser()
     _add_default_proj_dirs(parser=parser)
     _add_default_settings_section(parser=parser)
     _add_default_print_section(parser=parser)
+    
+    const.PM_DIR.mkdir(exist_ok=True)
+    if not CONFIG_FILE.exists():
+        CONFIG_FILE.touch()
     with open(CONFIG_FILE, "w+", encoding="utf-8") as fp:
         parser.write(fp)
 
@@ -75,7 +76,7 @@ def _add_default_proj_dirs(parser: ConfigParser) -> None:
 def _add_default_settings_section(parser: ConfigParser) -> None:
     parser.add_section("sett")
     parser["sett"]["local"] = const.LOCAL_CONFIG_NAME
-    parser["sett"]["db"] = const.DB_FILE.absolute()
+    parser["sett"]["db"] = str(const.DB_FILE.absolute())
 
 
 def _add_default_print_section(parser: ConfigParser) -> None:
