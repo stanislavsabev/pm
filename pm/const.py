@@ -7,7 +7,7 @@ HOME_DIR = Path.home()
 PM_DIR = Path(HOME_DIR / ".pm")
 DB_FILE = Path(PM_DIR / "db.csv")
 DB_COLUMNS = "name", "short", "path"
-LOCAL_CONFIG_NAME = ".proj-cfg"
+LOCAL_CONFIG_NAME = ".pm-cfg"
 
 WS8 = " " * 8
 WS4 = " " * 4

@@ -4,6 +4,7 @@
 testing/
 .python-cfg
 .proj-cfg
+.pm-cfg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
