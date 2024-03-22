@@ -1,4 +1,5 @@
 """Type definitions for the project."""
+
 import typing
 
 AnyDict = dict[str, typing.Any]

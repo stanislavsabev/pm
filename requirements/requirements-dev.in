@@ -1,13 +1,8 @@
 -r requirements.txt
-black
 coverage
-flake8
-flake8-black
-flake8-docstrings
-Flake8-pyproject
-flake8-requirements
-isort
 mock
 mypy
+pre-commit
 pytest
+ruff
 types-mock

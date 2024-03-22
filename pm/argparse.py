@@ -1,4 +1,5 @@
 """Argument parsing module."""
+
 import sys
 
 from pm import commands
