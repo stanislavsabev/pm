@@ -1,6 +1,10 @@
 import logging
 import os
 
+# https://peps.python.org/pep-0440/
+# [N!]N(.N)*[{a|b|rc}N][.postN][.devN]
+__version__ = "0.3a.dev1"
+
 
 def setup_logging() -> None:
     """Setup package logging."""

@@ -29,8 +29,6 @@ init: ## Install package and its dependencies
 	source $(VENV_PATH)/bin/activate \
 	&& python -m pip install --upgrade pip \
 	&& pip install pip-tools \
-	&& pip-compile requirements/requirements.in \
-	&& pip-compile requirements/requirements-dev.in \
 	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
 	&& pip install -e .
 
