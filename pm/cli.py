@@ -4,9 +4,7 @@ import logging
 import sys
 import traceback
 
-from pm import argparse
-from pm import commands
-from pm import const
+from pm import argparse, commands, const
 
 logger = logging.getLogger("pm")
 

@@ -3,14 +3,13 @@
 import asyncio
 import dataclasses
 import logging
-from functools import cache
 import os
+from functools import cache
 from pathlib import Path
 
 from git.repo.base import Repo
 
-from pm import config
-from pm import db
+from pm import config, db
 
 # from pm import util
 from pm.typedef import AnyDict, LStr, LStrDict
@@ -155,9 +154,7 @@ def find_managed(name: str, worktree: str | None = None) -> Path | None:
             path = Path(proj.path) / proj.name
             if worktree:
                 if worktree not in proj.worktrees:  # type: ignore
-                    raise ValueError(
-                        f"Cannot find worktree `{worktree}` in project `{proj.name}`"
-                    )
+                    raise ValueError(f"Cannot find worktree `{worktree}` in project `{proj.name}`")
                 path = path.joinpath(worktree)
             return path
     return None

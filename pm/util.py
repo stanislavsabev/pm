@@ -51,8 +51,7 @@ def print_profiler() -> None:
     global profiler
     global elapsed
     sorted_profiler = {
-        k: f"{v:0.4f}"
-        for k, v in sorted(profiler.items(), key=lambda kv: kv[1], reverse=True)
+        k: f"{v:0.4f}" for k, v in sorted(profiler.items(), key=lambda kv: kv[1], reverse=True)
     }
     print(json.dumps(sorted_profiler, indent=2))
     print(f"Total elapsed time {elapsed:0.4f}")

@@ -1,9 +1,9 @@
 """Project configuration."""
 
-from functools import cache
 import os
 import sys
 from configparser import ConfigParser
+from functools import cache
 from pathlib import Path
 
 from pm import const
@@ -18,11 +18,11 @@ LINUX = "Linux"
 MACOS = "Darwin"
 
 PLATFORM = ""
-if "win32" == sys.platform:
+if sys.platform == "win32":
     PLATFORM = WINDOWS
 elif "linux" in sys.platform:
     PLATFORM = LINUX
-elif "Darwin" == sys.platform:
+elif sys.platform == "Darwin":
     PLATFORM = MACOS
 else:
     raise EnvironmentError(f"Unsupported platform {sys.platform}")
@@ -49,9 +49,7 @@ def get_config() -> ConfigParser:
     parser = ConfigParser()
 
     if not const.PM_DIR.is_dir() or not CONFIG_FILE.exists():
-        raise FileNotFoundError(
-            "Cannot find `pm` config. Maybe you forgot to execute `pm init`?"
-        )
+        raise FileNotFoundError("Cannot find `pm` config. Maybe you forgot to execute `pm init`?")
     parser.read(CONFIG_FILE)
     return parser
 
@@ -89,13 +87,7 @@ def _add_default_print_section(parser: ConfigParser) -> None:
 
 def get_editor() -> str:
     """Get default editor app."""
-    ed = "code"
-    if PLATFORM == WINDOWS:
-        ed = r"%EDITOR%"
-    else:
-        ed = r"$EDITOR"
-    editor = os.path.expandvars(ed)
-    return editor
+    return os.path.expandvars((r"%EDITOR%" if PLATFORM == WINDOWS else r"$EDITOR"))
 
 
 # @util.timeit
