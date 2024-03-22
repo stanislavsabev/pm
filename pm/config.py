@@ -25,7 +25,7 @@ elif "linux" in sys.platform:
 elif sys.platform == "Darwin":
     PLATFORM = MACOS
 else:
-    raise EnvironmentError(f"Unsupported platform {sys.platform}")
+    raise OSError(f"Unsupported platform {sys.platform}")
 
 
 def dirs() -> StrDict:

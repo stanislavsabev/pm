@@ -57,7 +57,7 @@ def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
     branches: LStr = [b.name for b in repo.branches]  # type: ignore
     worktrees: LStr = []
     if is_bare_repo:
-        worktrees = [x for x in os.listdir(path) if x in branches]
+        worktrees = [b for b in branches if (path / b).is_dir()]
     return branches, active_branch.name, is_bare_repo, worktrees
 
 
