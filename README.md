@@ -1,6 +1,6 @@
 # **Project manager**
 
-List and manage available projects.
+Package to list and manage available projects.
 
 ## Installation
 

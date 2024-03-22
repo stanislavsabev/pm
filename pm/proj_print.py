@@ -13,10 +13,7 @@ def print_project(proj: Proj) -> None:
 
     if branches:
         for branch in branches:
-            if branch == proj.active_branch:
-                branch_str = f"(*{branch})"
-            else:
-                branch_str = f"({branch})"
+            branch_str = f"(*{branch})" if branch == proj.active_branch else f"({branch})"
             formatted_branches.append(branch_str)
     name = proj.name
     ljust = config.ljust()

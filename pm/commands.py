@@ -6,10 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Protocol, Type
 
-from pm import config, db
-from pm import const
-from pm import proj_man
-from pm import proj_print
+from pm import config, const, db, proj_man, proj_print
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]
@@ -60,9 +57,7 @@ class Ls:
 
 {WS4}List projects"""
     short_usage: str = "List managed projects, [-a] for all"
-    flags_usage: LStr = [
-        "-a --all        List all projects, including from PROJECTS_DIR"
-    ]
+    flags_usage: LStr = ["-a --all        List all projects, including from PROJECTS_DIR"]
     all_flag = False
 
     def parse_flag(self, argv: LStr, ndx: int) -> int:
@@ -117,7 +112,7 @@ class Cd:
         name, wt = args.name, args.worktree
         projects = proj_man.get_projects()
 
-        if not config.PLATFORM == config.WINDOWS:
+        if config.PLATFORM != config.WINDOWS:
             print(f"Command not supported on '{config.PLATFORM}'")
             return
 
@@ -224,9 +219,7 @@ class Add:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
-        proj_man.add_new_proj(
-            name=path.name, short=self.short_name, path=path.absolute().parent
-        )
+        proj_man.add_new_proj(name=path.name, short=self.short_name, path=path.absolute().parent)
 
 
 class Init:

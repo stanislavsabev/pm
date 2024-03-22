@@ -2,8 +2,7 @@
 
 import sys
 
-from pm import commands
-from pm import const
+from pm import commands, const
 from pm.typedef import LStr
 
 WS4 = const.WS4
