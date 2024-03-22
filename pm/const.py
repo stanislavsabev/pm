@@ -1,4 +1,5 @@
 """Project constants."""
+
 from pathlib import Path
 
 APP_NAME = "pm"

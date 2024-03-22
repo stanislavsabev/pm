@@ -1,4 +1,5 @@
 """Commands module."""
+
 import dataclasses
 import os
 import subprocess

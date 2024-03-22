@@ -1,4 +1,5 @@
 """Database module."""
+
 import csv
 
 from pm import const

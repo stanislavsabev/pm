@@ -56,21 +56,17 @@ clean: ## Clean cache
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name ".pytest_cache" -type d -exec rm -rf {} +
 
-.PHONY: cleanall
-cleanall: clean delete-venv ## Clean cache and venv
-
 .PHONY: open-cfg
 open-cfg: ## Open config
 	code ~/.pm
 
 .PHONY: format
 format: ## Format with black and isort
-	black $(PROJ_DIR)
-	isort $(PROJ_DIR)
+	ruff format $(PROJ_DIR) tests
+	ruff check --fix $(PROJ_DIR) tests
 
 .PHONY: check
 check: ## Check with mypy and flake8
-	flake8 $(PROJ_DIR)
 	mypy $(PROJ_DIR)
 
 .PHONY: checkall

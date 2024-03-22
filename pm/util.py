@@ -1,4 +1,5 @@
 """Project utilities."""
+
 import functools
 import json
 import os

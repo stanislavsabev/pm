@@ -1,4 +1,5 @@
 """Project configuration."""
+
 from functools import cache
 import os
 import sys
