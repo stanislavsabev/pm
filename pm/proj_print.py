@@ -42,7 +42,7 @@ def print_managed(projects: ProjDict) -> None:
     if not projects:
         print("  na")
         return
-    for project in sorted(projects.values(), key=lambda p: p.name.lower()):
+    for project in sorted(projects.values(), key=lambda p: p.short.lower()):
         print_project(project)
 
 
