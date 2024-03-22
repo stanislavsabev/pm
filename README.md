@@ -40,7 +40,7 @@ $ pm ls -h
     List projects
 
     Flags
-    -a --all        List all projects, including from PROJECTS_DIR
+    -a --all         List all projects, including from PROJECTS_DIR
     -h --help        Show this message and exit.
 
 $ pm
@@ -51,4 +51,13 @@ $ pm
       pm | pm                       : (*main) (own-argparse)
       qs | qspreadsheet             : (*main) (v1)
     wake | wake                     : (*main) (testing)
+```
+
+### Local Config
+
+File `.pm-cfg`
+
+```toml
+[project]
+name = "pm"
 ```
