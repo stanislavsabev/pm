@@ -1,6 +1,17 @@
 SHELL := /bin/bash
-PROJ_DIR=pm
-VENV_PATH=$$(cat .python-cfg)
+
+PROJ_DIR = pm
+TESTS_DIR = tests
+PROJ_CFG := $(PWD)/.proj-cfg
+PYTHON_CFG := $(PWD)/.python-cfg
+
+check-var-defined = $(if $(strip $($1)),,$(error "$1" is not defined))
+
+ifneq ("$(wildcard $(PROJ_CFG))","")
+include  $(PROJ_CFG)
+else ifneq ("$(wildcard $(PYTHON_CFG))","")
+VENV_PATH:=$$(cat $(PYTHON_CFG))
+endif
 
 # If the first argument is "rename"...
 ifeq (rename,$(firstword $(MAKECMDGOALS)))
@@ -25,15 +36,18 @@ rename: ## Rename this project. Args: <new-proj-name>
 
 .PHONY: init
 init: ## Install package and its dependencies
+	$(call check-var-defined,VENV_PATH)
 	python -m venv $(VENV_PATH)
-	source $(VENV_PATH)/bin/activate \
-	&& python -m pip install --upgrade pip \
-	&& pip install pip-tools \
-	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
-	&& pip install -e .
+	
+	# source $(VENV_PATH)/bin/activate \
+	# && python -m pip install --upgrade pip \
+	# && pip install pip-tools \
+	# && pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
+	# && pip install -e .
 
 .PHONY: update
 req-update: ## Update requirements
+	$(call check-var-defined,VENV_PATH)
 	source $(VENV_PATH)/bin/activate \
 	&& pip-compile requirements/requirements.in \
 	&& pip-compile requirements/requirements-dev.in \
@@ -41,11 +55,13 @@ req-update: ## Update requirements
 
 .PHONY: run
 run: ## Run example
+	$(call check-var-defined,VENV_PATH)
 	@source $(VENV_PATH)/bin/activate \
 	&& python -m testing.run
 
 .PHONY: delete-venv
 delete-venv: ## Delete virtual environment
+	$(call check-var-defined,VENV_PATH)
 	rm -rf $(VENV_PATH)
 	rm -rf $(PROJ_DIR).egg-info
 
@@ -59,23 +75,27 @@ open-cfg: ## Open config
 	code ~/.pm
 
 .PHONY: format
-format: ## Format with black and isort
-	ruff format $(PROJ_DIR) tests
-	ruff check --fix $(PROJ_DIR) tests
+format: ## Format and style checks
+	ruff format $(PROJ_DIR) $(TESTS_DIR)
+	ruff check --fix $(PROJ_DIR) $(TESTS_DIR)
 
 .PHONY: check
-check: ## Check with mypy and flake8
+check: ## Check with mypy
 	mypy $(PROJ_DIR)
 
 .PHONY: checkall
-checkall: format check ## Format and check with mypy and flake8
+checkall: format check ## Format, style checks and mypy
 
 .PHONY: build
 build: format check test ## Format and check with mypy and flake8
 
 .PHONY: test
 test: ## Run pytest with coverage
-	pytest
+	pytest $(TESTS_DIR) -v --cov=src --cov-report=term --cov-report=html:build/htmlcov --cov-report=xml --cov-fail-under=80
+
+.PHONY: collect
+collect: ## Run pytest collect only
+	pytest --collect-only $(TESTS_DIR)
 
 .PHONY: gh
 gh: ## Open remote in browser
