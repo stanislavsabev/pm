@@ -13,8 +13,7 @@ def setup_logging() -> None:
     logging.basicConfig(level=lvl, format=fmt)
     logger = logging.getLogger("pm")
     logger.setLevel(lvl)
-    git_logger = logging.getLogger("git.repo.base")
-    git_logger.setLevel("DEBUG")
+    logging.getLogger("git.repo.base").setLevel("WARNING")
 
 
 setup_logging()
