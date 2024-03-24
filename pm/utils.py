@@ -6,6 +6,7 @@ import os
 import time
 from typing import Any, Callable
 
+from pm import const
 from pm.typedef import AnyDict
 
 profiler: dict[str, float] = {}
@@ -55,3 +56,13 @@ def print_profiler() -> None:
     }
     print(json.dumps(sorted_profiler, indent=2))
     print(f"Total elapsed time {elapsed:0.4f}")
+
+
+def is_help_flag(arg: str) -> bool:
+    """Check if flag is -h / --help."""
+    return arg in const.HELP_FLAGS
+
+
+# def expect_flag(val: str):
+#     if not val.startswith("-"):
+#         ValueError(f"Invalid flag '{val}'. Expected value starting with -")
