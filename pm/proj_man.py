@@ -12,7 +12,7 @@ from git.repo.base import Repo
 from pm import config, db
 
 # from pm import util
-from pm.typedef import AnyDict, LStr, LStrDict
+from pm.typedef import AnyDict, StrList, StrListDict
 
 logger = logging.getLogger("pm")
 
@@ -38,13 +38,13 @@ class Proj:
     name: str
     path: str
     local_config: AnyDict | None
-    branches: LStr
+    branches: StrList
     active_branch: str
-    worktrees: LStr | None
+    worktrees: StrList | None
     is_bare: bool = False
 
 
-def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
+def read_repo(path: Path) -> tuple[StrList, str, bool, StrList]:
     """Read git repository.
 
     Returns:
@@ -54,8 +54,8 @@ def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
     logger.debug(f"repo: {repo}")
     is_bare_repo = repo.bare
     active_branch = repo.active_branch
-    branches: LStr = [b.name for b in repo.branches]  # type: ignore
-    worktrees: LStr = []
+    branches: StrList = [b.name for b in repo.branches]  # type: ignore
+    worktrees: StrList = []
     if is_bare_repo:
         worktrees = [b for b in branches if (path / b).is_dir()]
     return branches, active_branch.name, is_bare_repo, worktrees
@@ -101,7 +101,7 @@ def add_new_proj(name: str, short: str, path: Path) -> None:
 
 
 # @util.timeit
-async def read_managed(db_records: list[LStr]) -> ProjDict:
+async def read_managed(db_records: list[StrList]) -> ProjDict:
     """Read managed projects from the database and each project's git repository."""
     projects = {}
     tasks = []
@@ -119,10 +119,10 @@ async def read_managed(db_records: list[LStr]) -> ProjDict:
 
 
 # @util.timeit
-def read_non_managed() -> LStrDict:
+def read_non_managed() -> StrListDict:
     """Read non-managed projects directories."""
     dirs = config.dirs()
-    non_managed: LStrDict = {}
+    non_managed: StrListDict = {}
     for group, path in dirs.items():
         non_managed[group] = []
         for proj in os.listdir(path):
@@ -140,7 +140,7 @@ def get_projects() -> ProjDict:
 
 # @util.timeit
 @cache
-def get_non_managed() -> LStrDict:
+def get_non_managed() -> StrListDict:
     """Cache function for the non-managed projects."""
     projects = read_non_managed()
     return projects

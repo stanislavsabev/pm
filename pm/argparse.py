@@ -1,14 +1,15 @@
 """Argument parsing module."""
 
 import sys
+from dataclasses import dataclass, field
 
-from pm import commands, const
-from pm.typedef import LStr
+from pm import commands, const, proto
+from pm.typedef import StrList
 
 WS4 = const.WS4
 WS8 = const.WS8
 APP_NAME = const.APP_NAME
-HELP = ["-h", "--help"]
+HELP_FLAGS = ["-h", "--help"]
 
 _help_flag = f"-h --help{WS8}Show this message and exit."
 _short_usage = "\n".join(
@@ -22,18 +23,31 @@ _app_usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
 
 {WS4}Commands
 {_short_usage}"""
-_app_flags: LStr = []
 
 
-def print_usage(args: commands.AppArgs) -> None:
+@dataclass
+class Args:
+    """Command arguments."""
+
+    cmd: proto.CmdProto
+    proj_name: str | None = None
+    worktree: str | None = None
+
+    flags: StrList = field(default_factory=list)
+
+
+app_args = proto.Args(proj=APP_NAME)
+
+
+def print_usage(cmd: proto.CmdProto | None = None) -> None:
     """Print usage and flags."""
 
-    if args.command:
-        usage = args.command.usage
-        flags = args.command.flags_usage
+    if cmd:
+        usage = cmd.usage
+        flags = cmd.flags_usage
     else:
         usage = _app_usage
-        flags = _app_flags
+        flags = app_args.flags
 
     flags.append(_help_flag)
     flags_str = "\n".join(f"{WS4}{flag}" for flag in flags)
@@ -47,7 +61,7 @@ def print_usage(args: commands.AppArgs) -> None:
     )
 
 
-def parse_app_flag(argv: LStr, ndx: int) -> int:
+def parse_app_flag(argv: StrList, ndx: int) -> int:
     """Parse application flag."""
     flag = argv[ndx]
     ndx += 1
@@ -55,34 +69,51 @@ def parse_app_flag(argv: LStr, ndx: int) -> int:
     return ndx
 
 
-def parse() -> commands.AppArgs:
-    """Parse system arguments."""
-    argv = sys.argv[1:]
+def parse(argv: StrList) -> Args:
+    """Parse system arguments.
+    Signature:
+        pm [-cmd] [--cmd-flags] [proj-name [worktree-name]],  in any order
 
-    args = commands.AppArgs()
+    Examples:
+    $ `pm -h` | --help,  print usage
+    $ `pm`, same as `pm -ls`
+    $ `pm proj-name [worktree-name]`, same as `pm -open proj-name [worktree-name]`
+
+    $ `pm myproj -ls`, will look for project 'myproj' and list all
+        - worktrees, if bare repo
+        - branches, if git repo
+        - perform `ls` command, if not a repo
+
+    """
+    if argv and argv[0] in HELP_FLAGS:
+        print_usage()
+        sys.exit(0)
+
     if not argv:  # Called without argument == ls
-        cmd_cls = commands.COMMANDS["-ls"]
-        args.command = cmd_cls()
-        return args
+        return Args(cmd=commands.Ls())
+
+    cmd: proto.CmdProto = commands.UnknownCommand()
+    proj = None
+    wt = None
 
     ndx = 0
-    flag_parse_fn = parse_app_flag
     while ndx < len(argv):
-        if argv[ndx] in HELP:
-            print_usage(args)
-            sys.exit(0)
-        if argv[ndx].startswith("-"):
-            ndx = flag_parse_fn(argv, ndx)
-        elif not args.command and argv[ndx] in commands.COMMANDS:
-            cmd_cls = commands.COMMANDS[argv[ndx]]
-            args.command = cmd_cls()
-            flag_parse_fn = args.command.parse_flag
-        elif not args.name:
-            args.name = argv[ndx]
-            if not args.command:
-                cmd_cls = commands.COMMANDS["open"]
-                args.command = cmd_cls()
-        elif not args.worktree:
-            args.worktree = argv[ndx]
+        arg = argv[ndx]
+        if arg.startswith("-"):
+            if cmd is None and arg in commands.COMMANDS:
+                cmd_cls = commands.COMMANDS[arg]
+                cmd = cmd_cls()
+            elif cmd:
+                # parse command args
+                ndx = cmd.parse_argv(argv, ndx)
+            else:
+                raise ValueError(f"Unknown flag '{arg}'")
+        elif not proj:
+            proj = argv[ndx]
+        elif not wt:
+            wt = argv[ndx]
+        else:
+            raise ValueError("Too many positional arguments, see -h for usage")
         ndx += 1
-    return args
+
+    return Args(cmd=cmd, proj_name=proj, worktree=wt)

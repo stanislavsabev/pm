@@ -2,11 +2,12 @@
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Type
 
-from pm import config, const, db, models, proj_man, proj_print
-from pm.typedef import LStr
+from pm import config, const, db, proj_man, proj_print, proto
+from pm.typedef import StrList
 
 HELP = ["-h", "--help"]
 FLAGS = ["-a", "--all"]
@@ -18,14 +19,18 @@ WS8 = const.WS8
 class Ls:
     """Handler for the ls command."""
 
-    usage: str = f"""ls [FLAGS]
+    name = "-ls"
+    usage = proto.Usage(
+        full=f"""ls [FLAGS]
 
-{WS4}List projects"""
-    short_usage: str = "List managed projects, [-a] for all"
-    flags_usage: LStr = ["-a --all        List all projects, including from PROJECTS_DIR"]
+{WS4}List projects""",
+        short="List managed projects, [-a] for all",
+        flags=["-a --all        List all projects, including from PROJECTS_DIR"],
+    )
+
     all_flag = False
 
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option.
 
         Returns:
@@ -39,7 +44,7 @@ class Ls:
             raise ValueError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
-    def run(self, args: models.AppArgs) -> None:
+    def run(self, args: proto.AppArgs) -> None:
         """Run ls command."""
         del args
         config.get_config()
@@ -53,16 +58,18 @@ class Ls:
 class Cd:
     """Handler for the cd command."""
 
-    usage = f"""cd PROJECT [WORKTREE]
+    name = "-cd"
+    usage = proto.Usage(
+        full=f"""cd PROJECT [WORKTREE]
 
 {WS4}Navigate to project
 
 {WS4}PROJECT {WS8}Project name / short name
-{WS4}WORKTREE{WS8}Optional worktree name"""
-    short_usage: str = "Navigate to project"
-    flags_usage: LStr = []
+{WS4}WORKTREE{WS8}Optional worktree name""",
+        short="Navigate to project",
+    )
 
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option.
 
         Returns:
@@ -71,7 +78,7 @@ class Cd:
         del argv
         return ndx
 
-    def run(self, args: models.AppArgs) -> None:
+    def run(self, args: proto.AppArgs) -> None:
         """Run cd command."""
         config.get_config()
         name, wt = args.name, args.worktree
@@ -96,16 +103,19 @@ class Cd:
 class Open:
     """Handler for the open command."""
 
-    usage: str = f"""[open] PROJECT [WORKTREE]
+    name = "-open"
+
+    usage = proto.Usage(
+        full=f"""[open] PROJECT [WORKTREE]
 
 {WS4}Open project with editor
 
 {WS4}PROJECT {WS8}Project name / short name
-{WS4}WORKTREE{WS8}Optional worktree name"""
-    short_usage: str = "Open project"
-    flags_usage: LStr = []
+{WS4}WORKTREE{WS8}Optional worktree name""",
+        short="Open project",
+    )
 
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option.
 
         Returns:
@@ -114,7 +124,7 @@ class Open:
         del argv
         return ndx
 
-    def run(self, args: models.AppArgs) -> None:
+    def run(self, args: proto.AppArgs) -> None:
         """Run open command."""
         config.get_config()
         name, worktree = args.name, args.worktree
@@ -137,17 +147,20 @@ class Open:
 class Add:
     """Handler for the add command."""
 
-    usage = f"""add PROJECT [-s SHORT_NAME]
+    name = "-add"
+    usage = proto.Usage(
+        full=f"""add PROJECT [-s SHORT_NAME]
 
 {WS4}Add managed project
 
-{WS4}[PROJECT] {WS8}Project path, also used as name"""
-    short_usage: str = "Add managed project"
-    flags_usage: LStr = ["-s --short        SHORT_NAME"]
+{WS4}[PROJECT] {WS8}Project path, also used as name""",
+        short="Add managed project",
+        flags=["-s --short        SHORT_NAME"],
+    )
 
     short_name: str | None = None
 
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option.
 
         Returns:
@@ -162,7 +175,7 @@ class Add:
             raise ValueError(f"Unknown flag {flag} for command 'add'")
         return ndx
 
-    def run(self, args: models.AppArgs) -> None:
+    def run(self, args: proto.AppArgs) -> None:
         """Run add command."""
         config.get_config()
         if not args.name:
@@ -190,30 +203,43 @@ class Add:
 class Init:
     """Handler for the init command."""
 
-    usage = f"""init
+    name = "-init"
+    usage = proto.Usage(
+        full=f"""init
 
 {WS4}Init pm
-"""
-    short_usage: str = "Init pm"
-    flags_usage: LStr = []
+""",
+        short="Init pm",
+    )
 
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option."""
         del argv
         del ndx
         raise NotImplementedError
 
-    def run(self, args: models.AppArgs) -> None:
+    def run(self) -> None:
         """Run cd command."""
-        del args
         config.create_config()
         db.create_db()
 
 
-COMMANDS: dict[str, Type[models.ProtoCommand]] = {
-    "-ls": Ls,
-    "-cd": Cd,
-    "-open": Open,
-    "-add": Add,
-    "-init": Init,
-}
+class UnknownCommand:
+    """Handler for the init command."""
+
+    name = "UnknownCommand"
+    usage = proto.Usage(full="Unknown command")
+
+    def parse_argv(self, argv: StrList, ndx: int) -> int:
+        """Parse command option."""
+        del argv
+        del ndx
+        raise NotImplementedError
+
+    def run(self) -> None:
+        """Run cd command."""
+        print(self.usage)
+        sys.exit(1)
+
+
+COMMANDS: dict[str, Type[proto.CmdProto]] = {cmd.name: cmd for cmd in [Ls, Cd, Open, Add, Init]}

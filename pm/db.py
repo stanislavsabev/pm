@@ -3,7 +3,7 @@
 import csv
 
 from pm import const
-from pm.typedef import LStr, RecordTuple
+from pm.typedef import RecordTuple, StrList
 
 
 def create_db() -> None:
@@ -14,7 +14,7 @@ def create_db() -> None:
         add_record(const.DB_COLUMNS)
 
 
-def read_db() -> list[LStr]:
+def read_db() -> list[StrList]:
     """Read database file."""
     if not const.DB_FILE.exists():
         raise FileNotFoundError(
