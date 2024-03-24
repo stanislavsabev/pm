@@ -25,8 +25,16 @@ _app_usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
 _app_flags: LStr = []
 
 
-def print_usage(usage: str, flags: LStr) -> None:
+def print_usage(args: commands.AppArgs) -> None:
     """Print usage and flags."""
+
+    if args.command:
+        usage = args.command.usage
+        flags = args.command.flags_usage
+    else:
+        usage = _app_usage
+        flags = _app_flags
+
     flags.append(_help_flag)
     flags_str = "\n".join(f"{WS4}{flag}" for flag in flags)
     print(
@@ -53,7 +61,7 @@ def parse() -> commands.AppArgs:
 
     args = commands.AppArgs()
     if not argv:  # Called without argument == ls
-        cmd_cls = commands.COMMANDS["ls"]
+        cmd_cls = commands.COMMANDS["-ls"]
         args.command = cmd_cls()
         return args
 
@@ -61,10 +69,7 @@ def parse() -> commands.AppArgs:
     flag_parse_fn = parse_app_flag
     while ndx < len(argv):
         if argv[ndx] in HELP:
-            if args.command:
-                print_usage(args.command.usage, args.command.flags_usage)
-            else:
-                print_usage(_app_usage, _app_flags)
+            print_usage(args)
             sys.exit(0)
         if argv[ndx].startswith("-"):
             ndx = flag_parse_fn(argv, ndx)

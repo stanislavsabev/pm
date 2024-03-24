@@ -1,12 +1,11 @@
 """Commands module."""
 
-import dataclasses
 import os
 import subprocess
 from pathlib import Path
-from typing import Protocol, Type
+from typing import Type
 
-from pm import config, const, db, proj_man, proj_print
+from pm import config, const, db, models, proj_man, proj_print
 from pm.typedef import LStr
 
 HELP = ["-h", "--help"]
@@ -14,40 +13,6 @@ FLAGS = ["-a", "--all"]
 
 WS4 = const.WS4
 WS8 = const.WS8
-
-
-class ProtoCommand(Protocol):
-    """Application command prototype.
-
-    Attributes:
-        usage: str, Command help
-        short_usage: str, Short command help
-        flags_usage: list of str, command flags help
-    """
-
-    usage: str
-    short_usage: str
-    flags_usage: LStr
-
-    def parse_flag(self, argv: LStr, ndx: int) -> int:
-        """Parse command option.
-
-        Returns:
-            An int, last index that was parsed.
-        """
-
-    def run(self, args: "AppArgs") -> None:
-        """Run command."""
-
-
-@dataclasses.dataclass
-class AppArgs:
-    """Application arguments."""
-
-    flags: str | None = None
-    name: str | None = None
-    command: ProtoCommand | None = None
-    worktree: str | None = None
 
 
 class Ls:
@@ -74,7 +39,7 @@ class Ls:
             raise ValueError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: models.AppArgs) -> None:
         """Run ls command."""
         del args
         config.get_config()
@@ -106,7 +71,7 @@ class Cd:
         del argv
         return ndx
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: models.AppArgs) -> None:
         """Run cd command."""
         config.get_config()
         name, wt = args.name, args.worktree
@@ -149,7 +114,7 @@ class Open:
         del argv
         return ndx
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: models.AppArgs) -> None:
         """Run open command."""
         config.get_config()
         name, worktree = args.name, args.worktree
@@ -197,7 +162,7 @@ class Add:
             raise ValueError(f"Unknown flag {flag} for command 'add'")
         return ndx
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: models.AppArgs) -> None:
         """Run add command."""
         config.get_config()
         if not args.name:
@@ -238,17 +203,17 @@ class Init:
         del ndx
         raise NotImplementedError
 
-    def run(self, args: AppArgs) -> None:
+    def run(self, args: models.AppArgs) -> None:
         """Run cd command."""
         del args
         config.create_config()
         db.create_db()
 
 
-COMMANDS: dict[str, Type[ProtoCommand]] = {
-    "ls": Ls,
-    "cd": Cd,
-    "open": Open,
-    "add": Add,
-    "init": Init,
+COMMANDS: dict[str, Type[models.ProtoCommand]] = {
+    "-ls": Ls,
+    "-cd": Cd,
+    "-open": Open,
+    "-add": Add,
+    "-init": Init,
 }
