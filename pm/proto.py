@@ -1,6 +1,7 @@
+import abc
 from dataclasses import dataclass, field
-from typing import Protocol
 
+from pm import argparse
 from pm.typedef import StrList
 
 
@@ -18,12 +19,13 @@ class Usage:
     flags: StrList = field(default_factory=list)
 
 
-class CmdProto(Protocol):
+class CmdProto(abc.ABC):
     """Application command prototype."""
 
     name: str
     usage: Usage
 
+    @abc.abstractmethod
     def parse_argv(self, argv: StrList, ndx: int) -> int:
         """Parse command option.
 
@@ -31,5 +33,6 @@ class CmdProto(Protocol):
             An int, last index that was parsed.
         """
 
-    def run(self) -> None:
+    @abc.abstractmethod
+    def run(self, args: argparse.Args) -> None:
         """Run command."""

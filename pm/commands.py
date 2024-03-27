@@ -4,9 +4,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Type
 
-from pm import config, const, db, proj_man, proj_print, proto
+from pm import argparse, config, const, db, proj_man, proj_print, proto
 from pm.typedef import StrList
 
 HELP = ["-h", "--help"]
@@ -16,7 +15,7 @@ WS4 = const.WS4
 WS8 = const.WS8
 
 
-class Ls:
+class Ls(proto.CmdProto):
     """Handler for the ls command."""
 
     name = "-ls"
@@ -44,7 +43,7 @@ class Ls:
             raise ValueError(f"Unknown flag {flag} for command 'ls'")
         return ndx
 
-    def run(self, args: proto.AppArgs) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run ls command."""
         del args
         config.get_config()
@@ -55,7 +54,7 @@ class Ls:
             proj_print.print_non_managed(config.dirs())
 
 
-class Cd:
+class Cd(proto.CmdProto):
     """Handler for the cd command."""
 
     name = "-cd"
@@ -78,10 +77,10 @@ class Cd:
         del argv
         return ndx
 
-    def run(self, args: proto.AppArgs) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run cd command."""
         config.get_config()
-        name, wt = args.name, args.worktree
+        name, wt = args.proj_name, args.worktree
         projects = proj_man.get_projects()
 
         if config.PLATFORM != config.WINDOWS:
@@ -100,7 +99,7 @@ class Cd:
         os.system(f"start wt -d {path}")
 
 
-class Open:
+class Open(proto.CmdProto):
     """Handler for the open command."""
 
     name = "-open"
@@ -124,10 +123,10 @@ class Open:
         del argv
         return ndx
 
-    def run(self, args: proto.AppArgs) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run open command."""
         config.get_config()
-        name, worktree = args.name, args.worktree
+        name, worktree = args.proj_name, args.worktree
         if name is None:
             raise ValueError("Missing argument for `name` in command `open`")
         path = proj_man.find_managed(name, worktree)
@@ -144,7 +143,7 @@ class Open:
             print(f"{out_=}, {err_=}")
 
 
-class Add:
+class Add(proto.CmdProto):
     """Handler for the add command."""
 
     name = "-add"
@@ -175,12 +174,12 @@ class Add:
             raise ValueError(f"Unknown flag {flag} for command 'add'")
         return ndx
 
-    def run(self, args: proto.AppArgs) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run add command."""
         config.get_config()
-        if not args.name:
+        if not args.proj_name:
             raise ValueError("Missing argument for `project` in command `add`")
-        name_arg = args.name
+        name_arg = args.proj_name
         if name_arg == ".":
             path = Path.cwd()
         elif Path(name_arg).is_dir():
@@ -200,7 +199,7 @@ class Add:
         proj_man.add_new_proj(name=path.name, short=self.short_name, path=path.absolute().parent)
 
 
-class Init:
+class Init(proto.CmdProto):
     """Handler for the init command."""
 
     name = "-init"
@@ -218,13 +217,14 @@ class Init:
         del ndx
         raise NotImplementedError
 
-    def run(self) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run cd command."""
+        del args
         config.create_config()
         db.create_db()
 
 
-class UnknownCommand:
+class UnknownCommand(proto.CmdProto):
     """Handler for the init command."""
 
     name = "UnknownCommand"
@@ -236,10 +236,11 @@ class UnknownCommand:
         del ndx
         raise NotImplementedError
 
-    def run(self) -> None:
+    def run(self, args: argparse.Args) -> None:
         """Run cd command."""
+        del args
         print(self.usage)
         sys.exit(1)
 
 
-COMMANDS: dict[str, Type[proto.CmdProto]] = {cmd.name: cmd for cmd in [Ls, Cd, Open, Add, Init]}
+COMMANDS: dict[str, type[proto.CmdProto]] = {cmd.name: cmd for cmd in [Ls, Cd, Open, Add, Init]}

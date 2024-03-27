@@ -11,19 +11,6 @@ WS8 = const.WS8
 APP_NAME = const.APP_NAME
 HELP_FLAGS = ["-h", "--help"]
 
-_help_flag = f"-h --help{WS8}Show this message and exit."
-_short_usage = "\n".join(
-    f"{WS8}{name:>5}{WS8}{cmd.short_usage}" for name, cmd in commands.COMMANDS.items()
-)
-_app_usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
-
-{WS4}Calling `{APP_NAME}`
-{WS4}  > without args, lists managed projects (`ls` command).
-{WS4}  > with project [worktree], opens a project (`open` command).
-
-{WS4}Commands
-{_short_usage}"""
-
 
 @dataclass
 class Args:
@@ -36,20 +23,28 @@ class Args:
     flags: StrList = field(default_factory=list)
 
 
-app_args = proto.Args(proj=APP_NAME)
-
-
 def print_usage(cmd: proto.CmdProto | None = None) -> None:
     """Print usage and flags."""
 
-    if cmd:
-        usage = cmd.usage
-        flags = cmd.flags_usage
-    else:
-        usage = _app_usage
-        flags = app_args.flags
+    _short_usage = "\n".join(
+        f"{WS8}{name:>5}{WS8}{cmd.usage.short}" for name, cmd in commands.COMMANDS.items()
+    )
+    usage = f"""[-h] COMMAND [FLAGS] PROJECT [WORKTREE]
 
-    flags.append(_help_flag)
+    {WS4}Calling `{APP_NAME}`
+    {WS4}  > without args, lists managed projects (`ls` command).
+    {WS4}  > with project [worktree], opens a project (`open` command).
+
+    {WS4}Commands
+    {_short_usage}"""
+
+    flags = []
+
+    if cmd:
+        usage = cmd.usage.full
+        flags = cmd.usage.flags
+
+    flags.append(f"-h --help{WS8}Show this message and exit.")
     flags_str = "\n".join(f"{WS4}{flag}" for flag in flags)
     print(
         f"""

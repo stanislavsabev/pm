@@ -19,9 +19,9 @@ def die(msg: str | None) -> None:
 def app() -> None:
     """Application entry point."""
     try:
-        args: argparse.Args = argparse.parse()
+        args: argparse.Args = argparse.parse(sys.argv)
         logger.debug(f"Running command {args.cmd.name}")
-        args.cmd.run()
+        args.cmd.run(args)
     except Exception:
         die(traceback.format_exc())
 
