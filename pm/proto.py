@@ -22,8 +22,12 @@ class Usage:
 class CmdProto(abc.ABC):
     """Application command prototype."""
 
-    name: str
     usage: Usage
+
+    @abc.abstractmethod
+    def __init__(self, args: argparse.Args) -> None:
+        """Create comand with args"""
+        pass
 
     @abc.abstractmethod
     def parse_argv(self, argv: StrList, ndx: int) -> int:
@@ -34,5 +38,5 @@ class CmdProto(abc.ABC):
         """
 
     @abc.abstractmethod
-    def run(self, args: argparse.Args) -> None:
+    def run(self) -> None:
         """Run command."""

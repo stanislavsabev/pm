@@ -5,6 +5,7 @@ import sys
 import traceback
 
 from pm import argparse, const
+from pm.commands import COMMANDS
 
 logger = logging.getLogger("pm")
 
@@ -19,9 +20,12 @@ def die(msg: str | None) -> None:
 def app() -> None:
     """Application entry point."""
     try:
-        args: argparse.Args = argparse.parse(sys.argv)
-        logger.debug(f"Running command {args.cmd.name}")
-        args.cmd.run(args)
+        args = argparse.parse(sys.argv)
+
+        cmd_cls = COMMANDS[args.cmd_name]
+        cmd = cmd_cls(args)
+        logger.debug(f"Running command {args.cmd_name}")
+        cmd.run()
     except Exception:
         die(traceback.format_exc())
 
