@@ -94,14 +94,13 @@ def get_editor() -> str:
 def read_local_config(path: Path) -> AnyDict:
     """Read local config file."""
     local_config_file = path / const.LOCAL_CONFIG_NAME
-    local_config = {}
+    if not local_config_file.exists():
+        return {}
 
-    if local_config_file.exists():
-        with open(local_config_file, "r", encoding="utf-8") as fp:
-            parser = ConfigParser()
-            parser.read_file(fp)
-            local_config = dict(parser["project"])
-    return local_config
+    with open(local_config_file, "r", encoding="utf-8") as fp:
+        parser = ConfigParser()
+        parser.read_file(fp)
+        return dict(parser["project"])
 
 
 def write_local_config(path: Path, data: AnyDict | None = None) -> None:
