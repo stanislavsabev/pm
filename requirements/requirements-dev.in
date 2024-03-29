@@ -1,8 +1,10 @@
 -r requirements.txt
-coverage
 mock
 mypy
 pre-commit
 pytest
+pytest-cov
+pytest-xdist
 ruff
 types-mock
+pre-commit

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -60,18 +60,19 @@ testpaths = [
 [tool.mypy]
 files = "pm/*.py"
 strict = true
-install_types = true
 check_untyped_defs = true
 ignore_missing_imports = true
 scripts_are_modules = true
-non_interactive = true
+exclude = '''(?x)(
+    tests/*
+)'''
 
 [tool.ruff]
 line-length = 99
 indent-width = 4
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "B", "SIM", "I001"]
+select = ["D", "E4", "E7", "E9", "F", "B", "SIM", "I001"]
 ignore = ["D104", "D107", "D100"]
 
 fixable = ["ALL"]
@@ -90,7 +91,7 @@ line-ending = "auto"
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["E402"]
-"**/{tests,docs,tools}/*" = ["E402"]
+"**/{tests,testing,build,docs,tools}/*" = ["D", "E402"]
 
 [tool.bandit]
 targets = "."

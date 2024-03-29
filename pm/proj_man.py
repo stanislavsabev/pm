@@ -1,7 +1,6 @@
 """Project management module."""
 
 import asyncio
-import dataclasses
 import logging
 import os
 from functools import cache
@@ -10,55 +9,35 @@ from pathlib import Path
 from git.repo.base import Repo
 
 from pm import config, db
+from pm.models import Git, Proj, ProjDict
 
 # from pm import util
-from pm.typedef import AnyDict, LStr, LStrDict
+from pm.typedef import StrList, StrListDict
 
 logger = logging.getLogger("pm")
 
-ProjDict = dict[str, "Proj"]
 
-
-@dataclasses.dataclass
-class Proj:
-    """Project data.
-
-    Attributes:
-        short: str, short name for the project
-        name: str, the project name
-        path: str, the project path
-        local_config: dict, optional configuration data read from local file.
-        branches: list with the project branches
-        active_branch: str, the active branch, if defined
-        worktrees: list with the project worktrees
-        is_bare: bool, True if the project repository is bare.
-    """
-
-    short: str
-    name: str
-    path: str
-    local_config: AnyDict | None
-    branches: LStr
-    active_branch: str
-    worktrees: LStr | None
-    is_bare: bool = False
-
-
-def read_repo(path: Path) -> tuple[LStr, str, bool, LStr]:
+def read_repo(path: Path) -> Git:
     """Read git repository.
 
     Returns:
-        A tuple with branches, active_branch, is_bare_repo and worktrees
+        A Git model
     """
     repo = Repo(path)
+
     logger.debug(f"repo: {repo}")
-    is_bare_repo = repo.bare
-    active_branch = repo.active_branch
-    branches: LStr = [b.name for b in repo.branches]  # type: ignore
-    worktrees: LStr = []
-    if is_bare_repo:
+    branches: StrList = [b.name for b in repo.branches]  # type: ignore
+    worktrees: StrList = []
+    if repo.bare:
         worktrees = [b for b in branches if (path / b).is_dir()]
-    return branches, active_branch.name, is_bare_repo, worktrees
+
+    git = Git(
+        active_branch=repo.active_branch.name,
+        branches=branches,
+        worktrees=worktrees,
+        is_bare=repo.bare,
+    )
+    return git
 
 
 # @util.timeit
@@ -67,27 +46,20 @@ async def read_proj(name: str, short: str, path: str) -> Proj:
     proj_path = Path(path) / name
     if not proj_path.exists():
         return Proj(
-            name=name,
+            name="<missing>",
             short="<missing>",
-            is_bare=False,
             path=path,
-            local_config=None,
-            worktrees=None,
-            branches=[],
-            active_branch="",
         )
+
     local_config = config.read_local_config(path=proj_path)
-    branches, active_branch, is_bare, worktrees = read_repo(proj_path)
-    proj = Proj(
-        name=name,
-        short=short,
-        is_bare=is_bare,
-        path=path,
-        local_config=local_config,
-        worktrees=worktrees,
-        branches=branches,
-        active_branch=active_branch,
-    )
+    git: Git | None = None
+    try:
+        git = read_repo(proj_path)
+    except Exception:
+        # TODO:  Check the error being raised if not a repo
+        logger.info(f"Not a repo: {proj_path}")
+
+    proj = Proj(name=name, short=short, path=path, local_config=local_config, git=git)
     return proj
 
 
@@ -101,7 +73,7 @@ def add_new_proj(name: str, short: str, path: Path) -> None:
 
 
 # @util.timeit
-async def read_managed(db_records: list[LStr]) -> ProjDict:
+async def read_managed(db_records: list[StrList]) -> ProjDict:
     """Read managed projects from the database and each project's git repository."""
     projects = {}
     tasks = []
@@ -119,10 +91,10 @@ async def read_managed(db_records: list[LStr]) -> ProjDict:
 
 
 # @util.timeit
-def read_non_managed() -> LStrDict:
+def read_non_managed() -> StrListDict:
     """Read non-managed projects directories."""
     dirs = config.dirs()
-    non_managed: LStrDict = {}
+    non_managed: StrListDict = {}
     for group, path in dirs.items():
         non_managed[group] = []
         for proj in os.listdir(path):
@@ -140,35 +112,32 @@ def get_projects() -> ProjDict:
 
 # @util.timeit
 @cache
-def get_non_managed() -> LStrDict:
+def get_non_managed() -> StrListDict:
     """Cache function for the non-managed projects."""
     projects = read_non_managed()
     return projects
 
 
-def find_managed(name: str, worktree: str | None = None) -> Path | None:
-    """Find a managed project path."""
+def find_proj(name: str) -> Proj | None:
+    """Find project by name.
+
+    Args:
+        name: str, project to find
+
+    Returns:
+        A Proj instance or None, if not found
+    """
     managed = get_projects()
     for proj in managed.values():
         if name in [proj.short, proj.name]:
-            path = Path(proj.path) / proj.name
-            if worktree:
-                if worktree not in proj.worktrees:  # type: ignore
-                    raise ValueError(f"Cannot find worktree `{worktree}` in project `{proj.name}`")
-                path = path.joinpath(worktree)
-            return path
-    return None
-
-
-def find_non_managed(name: str, worktree: str | None = None) -> Path | None:
-    """Find a non-managed project path."""
+            return proj
     non_managed = get_non_managed()
+
     dirs = config.dirs()
     for group, projects in non_managed.items():
         for proj_name in projects:
             if name == proj_name:
                 path = Path(dirs[group]).joinpath(proj_name)
-                if worktree:
-                    path = path.joinpath(worktree)
-                return path
+                proj = asyncio.run(read_proj(name, name, str(path)))
+                return proj
     return None
