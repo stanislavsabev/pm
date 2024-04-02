@@ -2,7 +2,7 @@
 
 import sys
 
-from pm import commands, config, const
+from pm import __version__, commands, config, const
 from pm.models import Proj, ProjDict, Usage
 from pm.proj_man import get_non_managed
 from pm.typedef import StrDict, StrListDict
@@ -35,6 +35,8 @@ def print_commands() -> None:
     print()
     print("Commands")
     for name, cmd in commands.COMMANDS.items():
+        if name == "app_help":
+            continue
         print(f"  {name}\t  {cmd.usage.short}")
 
 
@@ -128,3 +130,8 @@ def print_non_managed(dirs: StrDict) -> None:
                 print(f"{project:<{ljust}} |", end=end)
             else:
                 print(f" {project}", end="\n")
+
+
+def print_package_version() -> None:
+    """Prints package version."""
+    print(__version__)

@@ -59,7 +59,12 @@ def print_profiler() -> None:
 
 
 def is_help_flag(arg: str) -> bool:
-    """Check if flag is -h / --help."""
+    """Check if flag is in help flags."""
+    return arg in const.HELP_FLAGS
+
+
+def is_version_flag(arg: str) -> bool:
+    """Check if flag is in version flsgs."""
     return arg in const.HELP_FLAGS
 
 
