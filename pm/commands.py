@@ -241,6 +241,7 @@ class Add(ICommand):
                     logger.warning(f"Too many positional arguments{SEE_h}")
                     continue
                 self.proj_name = arg
+            ndx += 1
         if not self.proj_name:
             raise ValueError(f"Missing argument PROJECT{SEE_h}")
 
