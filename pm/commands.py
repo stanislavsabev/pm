@@ -186,7 +186,7 @@ class Open(ICommand):
         proj = proj_man.find_proj(name)
         if not proj:
             raise FileNotFoundError(f"Could not find project `{name}`")
-        path = Path(proj.path)
+        path = Path(proj.path) / proj.name
         if wt:
             path = path.joinpath(wt)
 
