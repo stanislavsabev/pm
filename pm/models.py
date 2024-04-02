@@ -26,7 +26,7 @@ class Args:
     cmd_flags: StrList = field(default_factory=list)
 
 
-class CmdProto(abc.ABC):
+class ICommand(abc.ABC):
     """Application command prototype."""
 
     usage: Usage

@@ -7,13 +7,13 @@ from pathlib import Path
 
 from pm import config, db, printer, proj_man, utils
 from pm.const import SEE_h
-from pm.models import CmdProto, Usage
+from pm.models import ICommand, Usage
 from pm.typedef import StrList
 
 logger = logging.getLogger("pm")
 
 
-class Ls(CmdProto):
+class Ls(ICommand):
     """Handler for the ls command."""
 
     name = "ls"
@@ -71,7 +71,7 @@ class Ls(CmdProto):
             printer.print_project(proj)
 
 
-class Cd(CmdProto):
+class Cd(ICommand):
     """Handler for the cd command."""
 
     name = "cd"
@@ -126,7 +126,7 @@ class Cd(CmdProto):
         os.system(f"start wt -d {path}")
 
 
-class Open(CmdProto):
+class Open(ICommand):
     """Handler for the open command."""
 
     name = "open"
@@ -200,7 +200,7 @@ class Open(CmdProto):
             print(f"{out_=}, {err_=}")
 
 
-class Add(CmdProto):
+class Add(ICommand):
     """Handler for the add command."""
 
     name = "add"
@@ -241,6 +241,7 @@ class Add(CmdProto):
                     logger.warning(f"Too many positional arguments{SEE_h}")
                     continue
                 self.proj_name = arg
+            ndx += 1
         if not self.proj_name:
             raise ValueError(f"Missing argument PROJECT{SEE_h}")
 
@@ -266,7 +267,7 @@ class Add(CmdProto):
         )
 
 
-class Init(CmdProto):
+class Init(ICommand):
     """Handler for the init command."""
 
     name = "init"
@@ -294,10 +295,60 @@ class Init(CmdProto):
         db.create_db()
 
 
-COMMANDS: dict[str, type[CmdProto]] = {
+class AppHelp(ICommand):
+    """Handler for the help command."""
+
+    name = "app_help"
+    usage = Usage(
+        header="",
+        description=[""],
+        short="",
+    )
+
+    def __init__(self) -> None:
+        pass
+
+    def parse_args(self, argv: StrList) -> None:
+        """Parse command arguments."""
+        if not argv:
+            return
+        raise ValueError(f"Invalid argument '{argv[0]}'{SEE_h}")
+
+    def run(self) -> None:
+        """Run the app help command."""
+        printer.print_app_usage()
+
+
+class PackageVersion(ICommand):
+    """Handler for the package version command."""
+
+    name = "--version"
+    usage = Usage(
+        header="--version",
+        description=["Prints the package version"],
+        short="Prints the package version",
+    )
+
+    def __init__(self) -> None:
+        pass
+
+    def parse_args(self, argv: StrList) -> None:
+        """Parse command arguments."""
+        if not argv:
+            return
+        raise ValueError(f"Invalid argument '{argv[0]}'{SEE_h}")
+
+    def run(self) -> None:
+        """Run the version command."""
+        printer.print_package_version()
+
+
+COMMANDS: dict[str, type[ICommand]] = {
     "-ls": Ls,
     "-cd": Cd,
     "-open": Open,
     "-add": Add,
     "-init": Init,
+    "app_help": AppHelp,
+    "--version": PackageVersion,
 }

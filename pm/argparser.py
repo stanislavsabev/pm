@@ -1,11 +1,10 @@
 """Argument parsing module."""
 
-from pm import commands, models, printer
+from pm import commands, models, printer, utils
 from pm.typedef import StrList
-from pm.utils import is_help_flag
 
 
-def parse_cmd(argv: StrList) -> tuple[type[models.CmdProto], StrList]:
+def parse_cmd(argv: StrList) -> tuple[type[models.ICommand], StrList]:
     """Parse system arguments.
 
     Signature:
@@ -24,7 +23,8 @@ def parse_cmd(argv: StrList) -> tuple[type[models.CmdProto], StrList]:
     """
     if not argv:  # Called without argument == ls
         cmd_name = "-ls"
-    elif is_help_flag(argv[0]):
+    elif utils.is_help_flag(argv[0]):
+        cmd_name = "app_help"
         printer.print_app_usage(exit_=True)
     else:
         arg = argv[0]
