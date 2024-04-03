@@ -1,5 +1,6 @@
 import abc
 from dataclasses import dataclass, field
+from typing import Iterable
 
 from pm.typedef import AnyDict, StrList
 
@@ -9,40 +10,40 @@ class Usage:
     """Command Usage."""
 
     header: str
+    arg: str = field(default="")
     description: StrList = field(default_factory=list)
+    positional: list[tuple[str, list[str]]] | None = field(default=None)
     flags_header: str = ""
-    flags: dict[str, StrList] = field(default_factory=dict)
     short: str = ""
 
 
 @dataclass
-class Args:
-    """Command arguments."""
+class Flag:
+    """Flag Definition."""
 
-    cmd_name: str
-    proj_name: str | None = None
-    worktree: str | None = None
-
-    cmd_flags: StrList = field(default_factory=list)
+    name: str
+    val: bool | str | list[str] = field(default=False)
+    usage: Usage | None = field(default=None)
 
 
-class ICommand(abc.ABC):
-    """Application command prototype."""
+Flags = Iterable[Flag]
 
+
+class Cmd(abc.ABC):
+    """Cmd prototype."""
+
+    name: str
     usage: Usage
-
-    @abc.abstractmethod
-    def __init__(self) -> None:
-        """Create command."""
-        pass
-
-    @abc.abstractmethod
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
+    flags: list[Flag] = []
+    positional: list[str] = []
 
     @abc.abstractmethod
     def run(self) -> None:
         """Run command."""
+        pass
+
+
+TCmd = type[Cmd]
 
 
 @dataclass
@@ -77,7 +78,7 @@ class Proj:
     short: str
     path: str
     local_config: AnyDict = field(default_factory=dict)
-    git: Git | None = None
+    git: Git | None = field(default=None)
 
 
 ProjDict = dict[str, Proj]

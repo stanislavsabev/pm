@@ -3,7 +3,7 @@ import os
 
 # https://peps.python.org/pep-0440/
 # [N!]N(.N)*[{a|b|rc}N][.postN][.devN]
-__version__ = "0.4a3.dev"
+__version__ = "0.5a0.dev"
 
 
 def setup_logging() -> None:

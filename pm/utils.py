@@ -1,15 +1,18 @@
 """Project utilities."""
 
 import functools
-import json
-import os
+import logging
 import time
+from pathlib import Path
 from typing import Any, Callable
 
-from pm import const
+from pm.models import Cmd, Flag, Flags
 from pm.typedef import AnyDict
 
 profiler: dict[str, float] = {}
+
+
+logger = logging.getLogger(__name__)
 
 
 def timeit(fn: Callable[..., Any]) -> Callable[..., Any]:
@@ -27,47 +30,71 @@ def timeit(fn: Callable[..., Any]) -> Callable[..., Any]:
     return wrapped
 
 
-start = 0.0
-elapsed = 0.0
+def expand_flag_name(flag: str) -> list[str]:
+    """Takes a flag name like `h/help` and returns `[-h, --help]`."""
+    return ["-" * i + name for i, name in enumerate(flag.split("/"), start=1)]
 
 
-def tik() -> None:
-    """Start timer."""
-    global start
-    start = time.perf_counter()
+def find_in_names(flag: str, flags: list[str]) -> str | None:
+    """Searches fir a flag name in list of split names.
+
+    Returns:
+        A str with the plit name found or None.
+    """
+    if not flag.startswith("-"):
+        return None
+    for split_name in flags:
+        if any(flag == name for name in expand_flag_name(split_name)):
+            return split_name
+    return None
 
 
-def tok() -> None:
-    """Stop timer."""
-    global start
-    global elapsed
-    end = time.perf_counter()
-    elapsed = end - start
+def get_flag_by_name(name: str, flags: Flags) -> Flag | None:
+    """Finds flag in flags definitions by name."""
+    flag_name = find_in_names(name, [f.name for f in flags])
+    if not flag_name:
+        return None
+    return [f for f in flags if f.name == flag_name][0]
 
 
-def print_profiler() -> None:
-    """Print time profiler."""
-    if not os.environ.get("PERF", 0):
-        return
-    global profiler
-    global elapsed
-    sorted_profiler = {
-        k: f"{v:0.4f}" for k, v in sorted(profiler.items(), key=lambda kv: kv[1], reverse=True)
-    }
-    print(json.dumps(sorted_profiler, indent=2))
-    print(f"Total elapsed time {elapsed:0.4f}")
+def check_npositional(
+    positional: list[str], *, mn: int | None = None, mx: int | None = None
+) -> None:
+    """Check number of positional arguments and raise a ValueError."""
+    n = len(positional)
+    if mn and mx and mx < n < mn:
+        raise ValueError(f"Invalid number of positional arguments {n}")
+    if mn and n < mn:
+        raise ValueError(f"Invalid number of positional arguments {n}")
+    if mx and n > mx:
+        raise ValueError(f"Invalid number of positional arguments {n}")
 
 
-def is_help_flag(arg: str) -> bool:
-    """Check if flag is in help flags."""
-    return arg in const.HELP_FLAGS
+def set_positional(obj: Cmd, positional: list[str], names: list[str]) -> None:
+    """Set positional arguments."""
+    try:
+        i = 0
+        for pos, attr_name in zip(positional, names, strict=True):
+            setattr(obj, attr_name, pos)
+            i += 1
+    except ValueError:
+        logger.warning(f"{obj.name}: {i=}, {pos=}, {attr_name=}")
 
 
-def is_version_flag(arg: str) -> bool:
-    """Check if flag is in version flsgs."""
-    return arg in const.HELP_FLAGS
+def get_proj_path(config_path: str, proj_name: str, worktree: str) -> str:
+    """Gets project path from name and worktree."""
+    path = Path(config_path).joinpath(proj_name)
+    if worktree:
+        path = path.joinpath(worktree)
+
+    if not path.is_dir():
+        raise FileNotFoundError(f"Could not find proj path `{str(path)}`")
+    return str(path)
 
 
-# def expect_flag(val: str):
-#     if not val.startswith("-"):
-#         ValueError(f"Invalid flag '{val}'. Expected value starting with -")
+def path_name_and_parent(root: str) -> tuple[str, str]:
+    """Returns absolute path from name."""
+    path = Path(root).absolute()
+    if not path.is_dir():
+        raise FileNotFoundError(f"Cannot find project path '{root}'")
+    return path.name, str(path.parent)

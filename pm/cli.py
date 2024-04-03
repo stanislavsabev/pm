@@ -2,7 +2,6 @@
 
 import logging
 import sys
-import traceback
 
 from pm import argparser, const
 
@@ -13,19 +12,17 @@ def die(msg: str | None) -> None:
     """Print message end exit with error."""
     if msg:
         print(f"{const.APP_NAME}: {msg}")
-    sys.exit(1)
+    raise SystemExit
 
 
 def app() -> None:
     """Application entry point."""
     try:
-        cmd_cls, argv = argparser.parse_cmd(sys.argv[1:])
-        cmd = cmd_cls()
-        cmd.parse_args(argv)
-        logger.debug(f"Running command {cmd_cls.__name__}")
+        cmd = argparser.parse(sys.argv[1:])
+        logger.debug(f"Running {cmd.name}")
         cmd.run()
-    except Exception:
-        die(traceback.format_exc(limit=4))
+    except Exception as e:
+        die(e.args[0])
 
 
 if __name__ == "__main__":

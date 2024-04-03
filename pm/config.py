@@ -9,7 +9,6 @@ from pathlib import Path
 from pm import const
 from pm.typedef import AnyDict, StrDict
 
-PROJECTS_DIR = str(os.environ["PROJECTS_DIR"])
 CONFIG_FILE = Path(const.PM_DIR / "pmconf.ini")
 
 
@@ -26,6 +25,13 @@ elif sys.platform == "Darwin":
     PLATFORM = MACOS
 else:
     raise OSError(f"Unsupported platform {sys.platform}")
+
+
+@cache
+def get_projects_dir() -> str:
+    """Returns PROJECTS_DIR env variable."""
+    projects_dir = str(os.environ["PROJECTS_DIR"])
+    return projects_dir
 
 
 def dirs() -> StrDict:
@@ -70,7 +76,7 @@ def create_config() -> None:
 
 def _add_default_proj_dirs(parser: ConfigParser) -> None:
     parser.add_section("dirs")
-    parser["dirs"]["projects_dir"] = PROJECTS_DIR
+    parser["dirs"]["projects_dir"] = get_projects_dir()
 
 
 def _add_default_settings_section(parser: ConfigParser) -> None:

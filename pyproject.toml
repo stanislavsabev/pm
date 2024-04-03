@@ -58,11 +58,14 @@ testpaths = [
 ]
 
 [tool.mypy]
-files = "pm/*.py"
+files = "pm/**/*.py"
 strict = true
+install_types = true
 check_untyped_defs = true
 ignore_missing_imports = true
 scripts_are_modules = true
+non_interactive = true
+
 exclude = '''(?x)(
     tests/*
 )'''
@@ -96,4 +99,3 @@ line-ending = "auto"
 [tool.bandit]
 targets = "."
 exclude = "tests"
-
