@@ -4,7 +4,6 @@ import sys
 
 from pm import __version__, commands, config, const
 from pm.models import Proj, ProjDict, Usage
-from pm.proj_man import get_non_managed
 from pm.typedef import StrDict, StrListDict
 
 app_usage = Usage(
@@ -114,12 +113,8 @@ def print_managed(projects: ProjDict) -> None:
 
 
 # @util.timeit
-def print_non_managed(dirs: StrDict) -> None:
+def print_non_managed(dirs: StrDict, non_managed: StrListDict) -> None:
     """Print formatted info for the non-managed projects."""
-    non_managed = get_non_managed()
-    if not non_managed:
-        return
-
     for group in dirs:
         projects = non_managed[group]
         print(f"\n> {group}:\n")

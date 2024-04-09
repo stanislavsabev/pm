@@ -5,9 +5,10 @@ import os
 import subprocess
 from pathlib import Path
 
-from pm import config, db, printer, proj_man, utils
+from pm import config, db, printer, utils
 from pm.const import SEE_h
 from pm.models import ICommand, Usage
+from pm.proj_man import ProjMan, add_new_proj
 from pm.typedef import StrList
 
 logger = logging.getLogger("pm")
@@ -53,14 +54,15 @@ class Ls(ICommand):
     def run(self) -> None:
         """Run ls command."""
         config.get_config()
+        db_records = db.read_db()
+        proj_man = ProjMan(db_records=db_records)
         projects = proj_man.get_projects()
 
         if not self.proj_name:
             # ls all projects
             printer.print_managed(projects)
-
-            if self.all_flag:
-                printer.print_non_managed(config.dirs())
+            if self.all_flag and (non_managed := proj_man.get_non_managed()):
+                printer.print_non_managed(config.dirs(), non_managed)
         else:
             proj = proj_man.find_proj(self.proj_name)
             if not proj:
@@ -108,6 +110,8 @@ class Cd(ICommand):
         """Run cd command."""
         config.get_config()
         name, wt = self.proj_name, self.worktree
+        db_records = db.read_db()
+        proj_man = ProjMan(db_records=db_records)
         projects = proj_man.get_projects()
 
         if config.PLATFORM != config.WINDOWS:
@@ -183,6 +187,8 @@ class Open(ICommand):
         config.get_config()
         name, wt = self.proj_name, self.worktree
 
+        db_records = db.read_db()
+        proj_man = ProjMan(db_records=db_records)
         proj = proj_man.find_proj(name)
         if not proj:
             raise FileNotFoundError(f"Could not find project `{name}`")
@@ -255,16 +261,15 @@ class Add(ICommand):
         self.proj_name = path.absolute().name
         if not self.short_name:
             self.short_name = self.proj_name
-
+        db_records = db.read_db()
+        proj_man = ProjMan(db_records=db_records)
         projects = proj_man.get_projects()
         for name, project in projects.items():
             if project.name == self.proj_name:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
-        proj_man.add_new_proj(
-            name=self.proj_name, short=self.short_name, path=path.absolute().parent
-        )
+        add_new_proj(name=self.proj_name, short=self.short_name, path=path.absolute().parent)
 
 
 class Init(ICommand):

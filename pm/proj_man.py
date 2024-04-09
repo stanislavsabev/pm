@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import os
-from functools import cache
 from pathlib import Path
 
 from git.repo.base import Repo
@@ -41,7 +40,7 @@ def read_repo(path: Path) -> Git:
 
 
 # @util.timeit
-async def read_proj(name: str, short: str, path: str) -> Proj:
+async def read_proj(name: str, path: str, short: str | None = None) -> Proj:
     """Read project local config and git repo."""
     proj_path = Path(path) / name
     if not proj_path.exists():
@@ -58,8 +57,7 @@ async def read_proj(name: str, short: str, path: str) -> Proj:
     except Exception:
         # TODO:  Check the error being raised if not a repo
         logger.info(f"Not a repo: {proj_path}")
-
-    proj = Proj(name=name, short=short, path=path, local_config=local_config, git=git)
+    proj = Proj(name=name, short=(short or name), path=path, local_config=local_config, git=git)
     return proj
 
 
@@ -72,72 +70,78 @@ def add_new_proj(name: str, short: str, path: Path) -> None:
     db.add_record(record=(name, short_name, proj_path))
 
 
-# @util.timeit
-async def read_managed(db_records: list[StrList]) -> ProjDict:
-    """Read managed projects from the database and each project's git repository."""
-    projects = {}
-    tasks = []
-    for name, short, path in db_records:
-        if not path:
-            path = config.PROJECTS_DIR
-        if not short:
-            short = name
-        task = asyncio.create_task(read_proj(name=name, short=short, path=path))
-        tasks.append((name, task))
+class ProjMan:
+    """Project manager."""
 
-    for name, task in tasks:
-        projects[name] = await task
-    return projects
+    def __init__(self, db_records: list[StrList]) -> None:
+        self.db_records = db_records
+        self.managed: ProjDict = {}
+        self.non_managed: StrListDict = {}
 
+    # @util.timeit
+    async def read_managed(self) -> ProjDict:
+        """Read managed projects from the database and each project's git repository."""
+        projects = {}
+        tasks = []
+        for name, short, path in self.db_records:
+            if not path:
+                path = config.PROJECTS_DIR
+            if not short:
+                short = name
+            task = asyncio.create_task(read_proj(name=name, short=short, path=path))
+            tasks.append((name, task))
 
-# @util.timeit
-def read_non_managed() -> StrListDict:
-    """Read non-managed projects directories."""
-    dirs = config.dirs()
-    non_managed: StrListDict = {}
-    for group, path in dirs.items():
-        non_managed[group] = []
-        for proj in os.listdir(path):
-            if os.path.isdir(os.path.join(path, proj)) and proj not in get_projects():
-                non_managed[group].append(proj)
-    return non_managed
+        for name, task in tasks:
+            projects[name] = await task
+        return projects
 
+    # @util.timeit
+    def read_non_managed(self) -> StrListDict:
+        """Read non-managed projects directories."""
+        dirs = config.dirs()
+        managed = self.get_projects()
+        non_managed: StrListDict = {}
+        for group, path in dirs.items():
+            non_managed[group] = []
+            for proj in os.listdir(path):
+                if os.path.isdir(os.path.join(path, proj)) and proj not in managed:
+                    non_managed[group].append(proj)
+        return non_managed
 
-def get_projects() -> ProjDict:
-    """Cache function for the managed projects."""
-    if records := db.read_db():
-        return asyncio.run(read_managed(db_records=records))
-    return {}
+    def get_projects(self) -> ProjDict:
+        """Cache function for the managed projects."""
+        if not self.managed and self.db_records:
+            self.managed = asyncio.run(self.read_managed())
+        return self.managed
 
+    # @util.timeit
+    def get_non_managed(self) -> StrListDict:
+        """Cache function for the non-managed projects."""
+        if not self.non_managed:
+            self.non_managed = self.read_non_managed()
+        return self.non_managed
 
-# @util.timeit
-@cache
-def get_non_managed() -> StrListDict:
-    """Cache function for the non-managed projects."""
-    projects = read_non_managed()
-    return projects
+    def find_proj(self, name: str) -> Proj | None:
+        """Find project by name.
 
+        Args:
+            name: str, project to find
 
-def find_proj(name: str) -> Proj | None:
-    """Find project by name.
-
-    Args:
-        name: str, project to find
-
-    Returns:
-        A Proj instance or None, if not found
-    """
-    managed = get_projects()
-    for proj in managed.values():
-        if name in [proj.short, proj.name]:
-            return proj
-    non_managed = get_non_managed()
-
-    dirs = config.dirs()
-    for group, projects in non_managed.items():
-        for proj_name in projects:
-            if name == proj_name:
-                path = Path(dirs[group]).joinpath(proj_name)
-                proj = asyncio.run(read_proj(name, name, str(path)))
+        Returns:
+            A Proj instance or None, if not found
+        """
+        # Try find managed
+        managed = self.get_projects()
+        for proj in managed.values():
+            if name in [proj.short, proj.name]:
                 return proj
-    return None
+
+        # Try find non-managed
+        non_managed = self.get_non_managed()
+        dirs = config.dirs()
+        for group, projects in non_managed.items():
+            for proj_name in projects:
+                if name == proj_name:
+                    proj = asyncio.run(read_proj(name=name, path=dirs[group]))
+                    return proj
+        return None
