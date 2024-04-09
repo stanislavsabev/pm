@@ -73,8 +73,8 @@ class Proj:
         local_config: dict, optional configuration data read from local file.
     """
 
-    short: str
     name: str
+    short: str
     path: str
     local_config: AnyDict = field(default_factory=dict)
     git: Git | None = None
