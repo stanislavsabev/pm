@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+from functools import cache
 from pathlib import Path
 
 from git.repo.base import Repo
@@ -62,15 +63,16 @@ async def read_proj(name: str, path: str, short: str | None = None) -> Proj:
 
 
 # @util.timeit
-def add_new_proj(name: str, short: str, path: Path) -> None:
+def add_new_proj(name: str, short: str, path: str) -> None:
     """Add new project with local file and save to the database."""
-    config.write_local_config(path / name)
-    proj_path: str | None = None if path == Path(config.PROJECTS_DIR) else str(path)
+    path_obj = Path(path)
+    config.write_local_config(path_obj / name)
+    proj_path: str | None = None if path_obj == Path(config.get_projects_dir()) else str(path_obj)
     short_name: str | None = None if name == short else short
     db.add_record(record=(name, short_name, proj_path))
 
 
-class ProjMan:
+class ProjManager:
     """Project manager."""
 
     def __init__(self, db_records: list[StrList]) -> None:
@@ -85,7 +87,7 @@ class ProjMan:
         tasks = []
         for name, short, path in self.db_records:
             if not path:
-                path = config.PROJECTS_DIR
+                path = config.get_projects_dir()
             if not short:
                 short = name
             task = asyncio.create_task(read_proj(name=name, short=short, path=path))
@@ -145,3 +147,12 @@ class ProjMan:
                     proj = asyncio.run(read_proj(name=name, path=dirs[group]))
                     return proj
         return None
+
+
+@cache
+def get_proj_manager() -> ProjManager:
+    """Creates project manager."""
+    config.get_config()
+    db_records = db.read_db()
+    proj_man = ProjManager(db_records=db_records)
+    return proj_man

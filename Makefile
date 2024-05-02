@@ -11,6 +11,8 @@ ifneq ("$(wildcard $(PROJ_CFG))","")
 include  $(PROJ_CFG)
 else ifneq ("$(wildcard $(PYTHON_CFG))","")
 VENV_PATH:=$$(cat $(PYTHON_CFG))
+else
+VENV_PATH:=.venv
 endif
 
 # If the first argument is "rename"...
@@ -38,12 +40,11 @@ rename: ## Rename this project. Args: <new-proj-name>
 init: ## Install package and its dependencies
 	$(call check-var-defined,VENV_PATH)
 	python -m venv $(VENV_PATH)
-	
-	# source $(VENV_PATH)/bin/activate \
-	# && python -m pip install --upgrade pip \
-	# && pip install pip-tools \
-	# && pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
-	# && pip install -e .
+	source $(VENV_PATH)/bin/activate \
+	&& python -m pip install --upgrade pip \
+	&& pip install pip-tools \
+	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
+	&& pip install -e .
 
 .PHONY: update
 req-update: ## Update requirements
@@ -69,9 +70,11 @@ delete-venv: ## Delete virtual environment
 clean: ## Clean cache
 	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name ".pytest_cache" -type d -exec rm -rf {} +
+	find . -name ".mypy_cache" -type d -exec rm -rf {} +
+	find . -name ".ruff_cache" -type d -exec rm -rf {} +
 
 .PHONY: open-cfg
-open-cfg: ## Open config
+open-pm-cfg: ## Open pm config
 	code ~/.pm
 
 .PHONY: format
@@ -91,7 +94,11 @@ build: format check test ## Format and check with mypy and flake8
 
 .PHONY: test
 test: ## Run pytest with coverage
-	pytest $(TESTS_DIR) -v --cov=src --cov-report=term --cov-report=html:build/htmlcov --cov-report=xml --cov-fail-under=80
+	pytest $(TESTS_DIR) -v --cov=$(PROJ_DIR) --cov-report=term --cov-report=html:build/htmlcov --cov-report=xml --cov-fail-under=80
+
+.PHONY: cov
+cov: ## Open test coverage report in browser
+	firefox build/htmlcov/index.html
 
 .PHONY: collect
 collect: ## Run pytest collect only

@@ -2,9 +2,10 @@
 mock
 mypy
 pre-commit
+pre-commit
 pytest
 pytest-cov
 pytest-xdist
 ruff
 types-mock
-pre-commit
+typing-extensions

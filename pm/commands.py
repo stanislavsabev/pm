@@ -3,30 +3,40 @@
 import logging
 import os
 import subprocess
+import sys
 from pathlib import Path
 
-from pm import config, db, printer, utils
-from pm.const import SEE_h
-from pm.models import ICommand, Usage
-from pm.proj_man import ProjMan, add_new_proj
-from pm.typedef import StrList
+from pm import config, const, db, printer, utils
+from pm.models import Cmd, Flag, Proj, TCmd, Usage
+from pm.proj_manager import ProjManager, add_new_proj, get_proj_manager
 
 logger = logging.getLogger("pm")
 
 
-class Ls(ICommand):
+cmd_help_flag = Flag(name="h/help", usage=Usage("Show help on this command"))
+
+
+class Ls(Cmd):
     """Handler for the ls command."""
 
     name = "ls"
+    flags = [
+        Flag(
+            name="a/all",
+            usage=Usage(
+                header="List all projects, including non-managed.",
+                description=["If PROJECT, list all worktrees / branches, including remote."],
+            ),
+        )
+    ]
+
     usage = Usage(
-        header=f"{name} [FLAGS] [PROJECT]",
+        header=f"{name} [FLAGS] [PROJECT [WORKTREE]]",
         description=["List projects.", "If PROJECT is defined, list worktrees / branches"],
-        flags={
-            "-a --all": [
-                "List all projects, including non-managed.",
-                "If PROJECT, list all worktrees / branches, including remote.",
-            ]
-        },
+        positional=[
+            ("PROJECT", ["Optional project name"]),
+            ("WORKTREE", ["Optional worktree or folder name"]),
+        ],
         short="List projects / project worktrees, [-a] for all",
     )
 
@@ -34,56 +44,70 @@ class Ls(ICommand):
         """Constructor."""
         self.all_flag = False
         self.proj_name = ""
+        self.worktree = ""
 
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        for arg in argv:
-            if utils.is_help_flag(arg):
-                printer.print_usage(self.usage, exit_=True)
-            if arg.startswith("-"):
-                if arg.lstrip("-") in "a/all".split("/"):
-                    self.all_flag = True
-                else:
-                    raise ValueError(f"Unknown flag '{arg}'")
-            else:
-                if self.proj_name:
-                    logger.warning(f"Too many positional arguments{SEE_h}")
-                    continue
-                self.proj_name = arg
+    def _set_flags(self) -> None:
+        for flag in self.flags:
+            if flag.name == "a/all":
+                self.all_flag = bool(flag.val)
+
+    def _ls_worktree(self, proj: Proj) -> None:
+        """Run ls in a worktree of a project."""
+        path = Path(proj.path) / proj.name / self.worktree
+        if not path.is_dir():
+            raise FileNotFoundError(f"Failed to find {self.worktree} in {self.proj_name}")
+        ls_command = ["ls"]
+        if self.all_flag:
+            ls_command.append("-a")
+        ls_command.append(str(path))
+        logger.debug(ls_command)
+
+        cmd = subprocess.Popen(ls_command, shell=True)
+        out_, err_ = cmd.communicate()
+        if out_ or err_:
+            print(f"{out_=}, {err_=}")
+
+    def _ls_proj(self, proj: Proj) -> None:
+        """Run ls in a project."""
+        printer.print_project(proj)
+
+    def _ls_all_projects(self, proj_mgr: ProjManager) -> None:
+        """List all projects."""
+        projects = proj_mgr.get_projects()
+        printer.print_managed(projects)
+        if self.all_flag and (non_managed := proj_mgr.get_non_managed()):
+            printer.print_non_managed(config.dirs(), non_managed)
 
     def run(self) -> None:
         """Run ls command."""
-        config.get_config()
-        db_records = db.read_db()
-        proj_man = ProjMan(db_records=db_records)
-        projects = proj_man.get_projects()
+        if self.positional:
+            utils.set_positional(self, self.positional, ["proj_name", "worktree"])
+        self._set_flags()
+        proj_mgr = get_proj_manager()
 
-        if not self.proj_name:
-            # ls all projects
-            printer.print_managed(projects)
-            if self.all_flag and (non_managed := proj_man.get_non_managed()):
-                printer.print_non_managed(config.dirs(), non_managed)
-        else:
-            proj = proj_man.find_proj(self.proj_name)
+        if self.proj_name:
+            proj = proj_mgr.find_proj(self.proj_name)
             if not proj:
                 raise ValueError(f"Project {self.proj_name} not found")
+            if self.worktree:
+                self._ls_worktree(proj)
+            else:
+                self._ls_proj(proj)
+        else:
+            self._ls_all_projects(proj_mgr=proj_mgr)
 
-            if self.all_flag:
-                raise NotImplementedError("Using -a with a PROJECT")
-            printer.print_project(proj)
 
-
-class Cd(ICommand):
+class Cd(Cmd):
     """Handler for the cd command."""
 
     name = "cd"
     usage = Usage(
         header=f"{name} PROJECT [WORKTREE]",
         description=["Navigate to project"],
-        flags={
-            "PROJECT": ["Project name / short name"],
-            "WORKTREE": ["Optional worktree name"],
-        },
+        positional=[
+            ("PROJECT", ["Project name / short name"]),
+            ("WORKTREE", ["Optional worktree name, works only with bare repos"]),
+        ],
         short="Navigate to project",
     )
 
@@ -91,38 +115,25 @@ class Cd(ICommand):
         self.proj_name = ""
         self.worktree = ""
 
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        for arg in argv:
-            if utils.is_help_flag(arg):
-                printer.print_usage(self.usage, exit_=True)
-            if arg.startswith("-"):
-                raise ValueError(f"Unknown flag '{arg}'")
-            else:
-                if not self.proj_name:
-                    self.proj_name = arg
-                elif not self.worktree:
-                    self.worktree = arg
-                else:
-                    logger.warning(f"Too many positional arguments{SEE_h}")
-
     def run(self) -> None:
         """Run cd command."""
         config.get_config()
-        name, wt = self.proj_name, self.worktree
-        db_records = db.read_db()
-        proj_man = ProjMan(db_records=db_records)
-        projects = proj_man.get_projects()
+        utils.check_npositional(self.positional, mn=1, mx=2)
+        utils.set_positional(self, self.positional, ["proj_name", "worktree"])
+        proj_name, wt = self.proj_name, self.worktree
+
+        proj_mgr = get_proj_manager()
+        projects = proj_mgr.get_projects()
 
         if config.PLATFORM != config.WINDOWS:
             print(f"Command not supported on '{config.PLATFORM}'")
             return
 
         for _, proj in projects.items():
-            if proj.short == name or proj.name == name:
+            if proj.short == proj_name or proj.name == proj_name:
                 break
         else:
-            raise ValueError(f"Cannot find project {name}")
+            raise ValueError(f"Cannot find project {proj}")
 
         path = Path(proj.path) / proj.name
         if wt:
@@ -130,169 +141,101 @@ class Cd(ICommand):
         os.system(f"start wt -d {path}")
 
 
-class Open(ICommand):
+class Open(Cmd):
     """Handler for the open command."""
 
     name = "open"
     usage = Usage(
         header=f"{name} PROJECT [WORKTREE]",
         description=["Open project with editor"],
-        flags={
-            "PROJECT": ["Project name / short name"],
-            "WORKTREE": ["Optional worktree name"],
-        },
+        positional=[
+            ("PROJECT", ["Project name / short name"]),
+            ("WORKTREE", ["Optional worktree name"]),
+        ],
         short="Open project",
     )
 
     def __init__(self) -> None:
         self.proj_name = ""
         self.worktree = ""
-        self.ls = False
-        self.a = False
-
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        for arg in argv:
-            if utils.is_help_flag(arg):
-                printer.print_usage(self.usage, exit_=True)
-            if arg.startswith("-"):
-                if arg.lstrip("-") in "ls/la".split("/"):
-                    self.ls = True
-                    self.a = arg.endswith("a")
-                else:
-                    raise ValueError(f"Unknown flag '{arg}'")
-            else:
-                if not self.proj_name:
-                    self.proj_name = arg
-                elif not self.worktree:
-                    self.worktree = arg
-                else:
-                    logger.warning(f"Too many positional arguments{SEE_h}")
-        if not self.proj_name:
-            raise ValueError(f"Missing argument PROJECT{SEE_h}")
-
-    def _run_ls(self) -> None:
-        """Run ls command from Open."""
-        ls = Ls()
-        ls.proj_name = self.proj_name
-        ls.all_flag = self.a
-        ls.run()
 
     def run(self) -> None:
         """Run open command."""
-        if self.ls:
-            self._run_ls()
-            return
+        utils.check_npositional(self.positional, mn=1, mx=2)
+        utils.set_positional(self, self.positional, ["proj_name", "worktree"])
+        proj_name, wt = self.proj_name, self.worktree
 
-        config.get_config()
-        name, wt = self.proj_name, self.worktree
-
-        db_records = db.read_db()
-        proj_man = ProjMan(db_records=db_records)
-        proj = proj_man.find_proj(name)
+        proj_mgr = get_proj_manager()
+        proj = proj_mgr.find_proj(proj_name)
         if not proj:
-            raise FileNotFoundError(f"Could not find project `{name}`")
-        path = Path(proj.path) / proj.name
-        if wt:
-            path = path.joinpath(wt)
-
-        if not path.is_dir():
-            raise FileNotFoundError(f"Could not find proj path `{str(path)}`")
+            raise ValueError(f"Could not find project `{proj_name}`")
+        path = utils.get_proj_path(config_path=proj.path, proj_name=proj.name, worktree=wt)
 
         editor = config.get_editor()
-        cmd = subprocess.Popen(f"{editor} {path}", shell=True)
+        cmd = subprocess.Popen([editor, path], shell=True)
         out_, err_ = cmd.communicate()
         if out_ or err_:
             print(f"{out_=}, {err_=}")
 
 
-class Add(ICommand):
+class Add(Cmd):
     """Handler for the add command."""
 
     name = "add"
     usage = Usage(
         header=f"{name} PROJECT [-s SHORT_NAME]",
         description=["Add managed project"],
-        flags={
-            "PROJECT": [
-                "Project path, also used as name.",
-                "`.` uses current path as project name.",
-            ],
-            "-s --short": ["SHORT_NAME"],
-        },
+        positional=[
+            ("PROJECT", ["Project path, also used as project name.", "`.` uses current dir."]),
+        ],
         short="Add managed project",
     )
-    short_name: str | None = None
+
+    flags = [
+        Flag(name="s/short", val="", usage=Usage(header="", arg="SHORT_NAME")),
+    ]
 
     def __init__(self) -> None:
         self.proj_name: str = ""
+        self.short_name: str = ""
 
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        ndx = 0
-        while ndx < len(argv):
-            arg = argv[ndx]
-            if utils.is_help_flag(arg):
-                printer.print_usage(self.usage, exit_=True)
-            if arg.startswith("-"):
-                if arg.lstrip("-") in "s/short".split("/"):
-                    ndx += 1
-                    if not ndx < len(argv):
-                        raise ValueError(f"Missing value for flag '{arg}'{SEE_h}")
-                    self.short_name = argv[ndx]
-                else:
-                    raise ValueError(f"Unknown flag '{arg}'")
-            else:
-                if self.proj_name:
-                    logger.warning(f"Too many positional arguments{SEE_h}")
-                    continue
-                self.proj_name = arg
-            ndx += 1
-        if not self.proj_name:
-            raise ValueError(f"Missing argument PROJECT{SEE_h}")
-
-    def run(self) -> None:
-        """Run add command."""
-        config.get_config()
-        path = Path(self.proj_name)
-        if not path.is_dir():
-            raise FileNotFoundError(f"Cannot find project path '{self.proj_name}'")
-
-        self.proj_name = path.absolute().name
-        if not self.short_name:
-            self.short_name = self.proj_name
-        db_records = db.read_db()
-        proj_man = ProjMan(db_records=db_records)
-        projects = proj_man.get_projects()
+    def _check_config(self) -> None:
+        proj_mgr = get_proj_manager()
+        projects = proj_mgr.get_projects()
         for name, project in projects.items():
             if project.name == self.proj_name:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
-        add_new_proj(name=self.proj_name, short=self.short_name, path=path.absolute().parent)
+
+    def _set_flags(self) -> None:
+        for flag in self.flags:
+            if flag.name == "s/short":
+                self.short_name = str(flag.val)
+
+    def run(self) -> None:
+        """Run add command."""
+        config.get_config()
+        utils.check_npositional(self.positional, mn=1, mx=1)
+        utils.set_positional(self, self.positional, ["proj_name"])
+        self._set_flags()
+        self.proj_name, parent = utils.path_name_and_parent(self.proj_name)
+
+        if not self.short_name:
+            self.short_name = self.proj_name
+        self._check_config()
+        add_new_proj(name=self.proj_name, short=self.short_name, path=parent)
 
 
-class Init(ICommand):
+class Init(Cmd):
     """Handler for the init command."""
 
     name = "init"
     usage = Usage(
         header=f"{name}",
-        description=["Init pm"],
+        description=["Init pm. Create .pm/ folder with config and db in user's home dir "],
         short="Init pm",
     )
-
-    def __init__(self) -> None:
-        pass
-
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        if not argv:
-            return
-        if utils.is_help_flag(argv[0]):
-            printer.print_usage(self.usage, exit_=True)
-        else:
-            raise ValueError(f"Invalid argument '{argv[0]}'{SEE_h}")
 
     def run(self) -> None:
         """Run cd command."""
@@ -300,60 +243,98 @@ class Init(ICommand):
         db.create_db()
 
 
-class AppHelp(ICommand):
+class Help(Cmd):
     """Handler for the help command."""
 
-    name = "app_help"
+    name = "h/help"
     usage = Usage(
-        header="",
-        description=[""],
-        short="",
+        header="Show this message and exit.",
     )
 
-    def __init__(self) -> None:
-        pass
-
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        if not argv:
-            return
-        raise ValueError(f"Invalid argument '{argv[0]}'{SEE_h}")
+    def __init__(self, cmd: Cmd | None = None) -> None:
+        super().__init__()
+        self._cmd = cmd
+        self._flag = Flag(self.name, usage=self.usage)
 
     def run(self) -> None:
-        """Run the app help command."""
-        printer.print_app_usage()
+        """Run the app help command.
+
+        Prints the app usage .
+        """
+        if self._cmd:
+            self._cmd_help()
+        else:
+            self._app_help()
+
+    def _cmd_help(self) -> None:
+        if not self._cmd:
+            return
+        flags = self._cmd.flags
+        flags.insert(0, self._flag)
+        printer.print_usage(self._cmd.usage)
+        printer.print_flags(flags=flags)
+
+    def _app_help(self) -> None:
+        app_usage = Usage(
+            header="pm [-h] COMMAND [FLAGS] PROJECT [WORKTREE]",
+            description=[
+                f"Calling `{const.APP_NAME}` without args, lists managed projects.",
+            ],
+        )
+        printer.print_usage(app_usage)
+        printer.print_commands(COMMANDS)
+        flags = [Flag(name=app_flag.name, usage=app_flag.usage) for app_flag in APP_FLAGS]
+        flags.insert(0, self._flag)
+        printer.print_flags(flags=flags)
+        sys.exit(0)
 
 
-class PackageVersion(ICommand):
+class PackageVersion(Cmd):
     """Handler for the package version command."""
 
-    name = "--version"
-    usage = Usage(
-        header="--version",
-        description=["Prints the package version"],
-        short="Prints the package version",
-    )
-
-    def __init__(self) -> None:
-        pass
-
-    def parse_args(self, argv: StrList) -> None:
-        """Parse command arguments."""
-        if not argv:
-            return
-        raise ValueError(f"Invalid argument '{argv[0]}'{SEE_h}")
+    name = "V/version"
+    usage = Usage(header="Show package version")
 
     def run(self) -> None:
         """Run the version command."""
         printer.print_package_version()
 
 
-COMMANDS: dict[str, type[ICommand]] = {
-    "-ls": Ls,
-    "-cd": Cd,
-    "-open": Open,
-    "-add": Add,
-    "-init": Init,
-    "app_help": AppHelp,
-    "--version": PackageVersion,
-}
+COMMANDS: list[TCmd] = [
+    Ls,
+    Cd,
+    Open,
+    Add,
+    Init,
+]
+
+
+APP_FLAGS: list[TCmd] = [
+    PackageVersion,
+]
+
+
+def get_command_names() -> list[str]:
+    """Returns all command names."""
+    return [c.name for c in COMMANDS]
+
+
+def get_app_flag_names() -> list[str]:
+    """Returns app flags names."""
+    return [c.name for c in APP_FLAGS]
+
+
+def create_app_flag_cmd(name: str) -> Cmd:
+    """Returns the command for an app flag."""
+    for flag in APP_FLAGS:
+        if name == flag.name:
+            return flag()
+    raise ValueError(f"Invalid app flag name {name}")
+
+
+def create_cmd(name: str) -> Cmd:
+    """Returns the command for an app flag."""
+    for cmd in COMMANDS:
+        if name == cmd.name:
+            return cmd()
+    raise ValueError(f"Invalid command name {name}")
