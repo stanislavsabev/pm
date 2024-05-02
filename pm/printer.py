@@ -2,41 +2,17 @@
 
 import sys
 
-from pm import __version__, commands, config, const
-from pm.models import Proj, ProjDict, Usage
+from pm import __version__, config, utils
+from pm.models import Flags, Proj, ProjDict, TCmd, Usage
 from pm.typedef import StrDict, StrListDict
 
-app_usage = Usage(
-    header="pm [-h] COMMAND [FLAGS] PROJECT [WORKTREE]",
-    description=[
-        f"Calling `{const.APP_NAME}`",
-        "  > without args, lists managed projects (`ls` command).",
-        "  > with project [worktree], opens a project (`open` command).",
-    ],
-    flags={"-h --help": ["Show this message and exit."]},
-)
 
-
-def print_app_usage(exit_: bool = False) -> None:
-    """Print app usage help.
-
-    Args:
-        exit_: bool, exit the program after print
-    """
-    print_usage(app_usage)
-    print_commands()
-    if exit_:
-        sys.exit(0)
-
-
-def print_commands() -> None:
+def print_commands(commands: list[TCmd]) -> None:
     """Print list of all commands."""
     print()
-    print("Commands")
-    for name, cmd in commands.COMMANDS.items():
-        if name == "app_help":
-            continue
-        print(f"  {name}\t  {cmd.usage.short}")
+    print("  Commands")
+    for cmd in commands:
+        print(f"  {cmd.name:>8}\t{cmd.usage.short}")
 
 
 def print_usage(usage: Usage, exit_: bool = False) -> None:
@@ -47,28 +23,43 @@ def print_usage(usage: Usage, exit_: bool = False) -> None:
         exit_: bool, exit the program after print
     """
     print(f"Usage: {usage.header}")
-
     for line in usage.description:
         print(f"  {line}")
+    if usage.positional:
+        print_positional(usage.positional)
 
-    print_flags(usage.flags)
     if exit_:
         sys.exit(0)
 
 
-def print_flags(flags: StrListDict) -> None:
+def print_positional(positional: list[tuple[str, list[str]]]) -> None:
+    """Print positional arguments."""
+    print()
+    for argname, description in positional:
+        print(f"  {argname}\t{description[0]}")
+        for line in description[1:]:
+            print(f"  \t\t{line}")
+
+
+def print_flags(flags: Flags) -> None:
     """Print flags.
 
     Args:
-        flags: dict with flags, flags descriptions
+        flags: Flags, flags definitions
     """
     print()
-    for name, lines in flags.items():
-        line = lines[0] if lines else ""
-        print(f"  {name}\t{line}")
-        if len(lines) > 1:
-            for line in lines[1:]:
-                print(f"\t\t  {line}")
+    for flag in flags:
+        names = " ".join(utils.expand_flag_name(flag.name))
+        if not flag.usage:
+            print(f"  {names}")
+            return
+        usage = flag.usage
+        header = usage.header
+        if usage.arg:
+            names += f"\t{usage.arg}"
+        print(f"  {names}\t{header}")
+        for line in usage.description:
+            print(f"\t\t  {line}")
 
 
 # @util.timeit
