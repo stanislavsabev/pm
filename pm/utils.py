@@ -73,12 +73,10 @@ def check_npositional(
 def set_positional(obj: Cmd, positional: list[str], names: list[str]) -> None:
     """Set positional arguments."""
     try:
-        i = 0
         for pos, attr_name in zip(positional, names, strict=True):
             setattr(obj, attr_name, pos)
-            i += 1
     except ValueError:
-        logger.warning(f"{obj.name}: {i=}, {pos=}, {attr_name=}")
+        logger.debug(f"{obj.name}: ValueError, {pos=}, {attr_name=}")
 
 
 def get_proj_path(config_path: str, proj_name: str, worktree: str) -> str:
