@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from pm.typedef import AnyDict, StrList
+from pm.typedef import AnyDict, StrDict, StrList
 
 
 @dataclass
@@ -59,6 +59,7 @@ class Git:
 
     active_branch: str
     branches: StrList = field(default_factory=list)
+    remote_branches: StrList = field(default_factory=list)
     worktrees: StrList = field(default_factory=list)
     is_bare: bool = False
 
@@ -82,3 +83,44 @@ class Proj:
 
 
 ProjDict = dict[str, Proj]
+
+
+class BCColors:
+    """Batch console colors."""
+
+    GRAY_FG = "\033[90m"
+    RED_FG = "\033[91m"
+    GREEN_FG = "\033[92m"
+    YELLOW_FG = "\033[93m"
+    BLUE_FG = "\033[94m"
+    MAGENTA_FG = "\033[95m"
+    CYAN_FG = "\033[96m"
+    WHITE_FG = "\033[97m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
+
+
+@dataclass
+class Table:
+    """Table to print."""
+
+    headers: StrList = field(default_factory=list)
+    # {"column": "|", "top": "=", "bottom": "-"}
+    header_border: StrDict = field(default_factory=dict)
+    # {"column": "|", "top": "=", "bottom": "-"}
+    table_border: StrDict = field(default_factory=dict)
+    widths: list[int] = field(default_factory=list)
+    alignments: list[str] = field(default_factory=list)
+    rows: Iterable[StrList] | None = None
+
+
+@dataclass
+class PrintableProj:
+    """Printable for a Proj."""
+
+    short: str
+    name: str
+    bare: str
+    branches: list[str] = field(default_factory=list)
+    remote_branches: list[str] = field(default_factory=list)
