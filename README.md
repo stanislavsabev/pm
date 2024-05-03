@@ -4,60 +4,54 @@ Package to list and manage available projects.
 
 ## Installation
 
+Check the [repository tags](https://github.com/stanislavsabev/pm/tags) for latest version
+
 ```shell
-pip install git+https://github.com/stanislavsabev/pm.git@main
+pip install git+https://github.com/stanislavsabev/pm.git@v0.1.2
 ```
+
 
 ## Usage
 
-First execution will create default configuration file and database file.
+Run `pm init` to create default configuration and database.
 
-```shell
+```sh
 $ pm --help
+Usage: pm [-h] COMMAND [FLAGS] PROJECT [WORKTREE]
+  Calling `pm` without args, lists managed projects.
 
-    Usage: pm [-h] COMMAND [FLAGS] PROJECT [WORKTREE]
+  Commands
+        ls      List projects / project worktrees, [-a] for all
+        cd      Navigate to project
+      open      Open project
+       add      Add managed project
+      init      Init pm
 
-    Calling `pm`
-      > without args, lists managed projects (`ls` command).
-      > with project [worktree], opens a project (`open` command).
-
-    Commands
-           ls        List managed projects, [-a] for all
-           cd        Navigate to project
-         open        Open project
-          add        Add managed project
-
-    Flags
-    -h --help        Show this message and exit.
-
+  -h --help     Show this message and exit.
+  -V --version  Show package version
 ```
 
-```shell
+```sh
 $ pm ls -h
+Usage: ls [FLAGS] [PROJECT [WORKTREE]]
+  List projects.
+  If PROJECT is defined, list worktrees / branches
 
-    Usage: pm ls [FLAGS]
+  PROJECT       Optional project name
+  WORKTREE      Optional worktree or folder name
 
-    List projects
-
-    Flags
-    -a --all         List all projects, including from PROJECTS_DIR
-    -h --help        Show this message and exit.
+  -h --help     Show this message and exit.
+  -a --all      List all projects, including non-managed.
+                  If PROJECT, list all worktrees / branches, including remote.
 
 $ pm
-
 > Projects:
-
-     dot | .dotfiles                : (*main)
-      pm | pm                       : (*main) (own-argparse)
-      qs | qspreadsheet             : (*main) (v1)
-    wake | wake                     : (*main) (testing)
-```
-
-### Local Config
-
-File `.pm-cfg`
-
-```toml
-[project]
-name = "pm"
+--------------------------------------------------------
+wake wake         b *main variables         
+  qs qspreadsheet b *main v1                
+ dot .dotfiles      *main                   
+  pm pm           b commands-to-flags develop fix-add
+                    *main                   
+  vb vba-parser   b *main                   
+--------------------------------------------------------
 ```

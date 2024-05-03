@@ -70,12 +70,18 @@ class Ls(Cmd):
     def _ls_proj(self, proj: Proj) -> None:
         """Run ls in a project."""
         printable = printer.proj_to_printable(proj=proj)
-        printer.print_project(printable=printable, all_flag=self.all_flag)
+        if not self.all_flag:
+            printable.remote_branches.clear()
+        printer.print_project(printable=printable)
 
     def _ls_projects(self, proj_mgr: ProjManager) -> None:
         """List all projects."""
         projects = proj_mgr.get_projects()
-        print("> Projects:\n")
+        if not self.all_flag:
+            for _, proj in projects.items():
+                if proj.git:
+                    proj.git.remote_branches.clear()
+        print("> Projects:")
         table = printer.projects_to_table(projects=projects)
         printer.print_table(table=table)
 

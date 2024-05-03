@@ -83,30 +83,22 @@ def proj_to_printable(proj: Proj) -> PrintableProj:
     )
 
 
-def print_project(printable: PrintableProj, all_flag: bool = False) -> None:
+def print_project(printable: PrintableProj) -> None:
     """Print project formatted info."""
     name = printable.name
     max_name = 40
     if len(name) > max_name:
         name = name[:max_name] + ".."
-    end = "\n" if not all_flag else " "
     print(
         "{short:>10} | {name:<{max_name}} {bare}: {branches}".format(
             short=printable.short,
             name=name,
             max_name=max_name,
             bare=printable.bare,
-            branches=" ".join(printable.branches),
+            branches=" ".join(printable.branches + printable.remote_branches),
         ),
-        end=end,
+        end="\n",
     )
-    if all_flag:
-        print(
-            "r: {remote_branches}".format(
-                remote_branches=" ".join(printable.remote_branches),
-            ),
-            end="\n",
-        )
 
 
 def print_table_headers(table: Table) -> None:
@@ -224,16 +216,13 @@ def projects_to_table(projects: ProjDict) -> Table:
             rows.extend(more_branch_rows)
 
     # headers = ["short", "full name", "b", "br/wt"]
-    headers: StrList = []
     alignments: StrList = [">", "<", "^", "<"]
-    widths: list[int] = [swidth + 2, fwidth + 2, 3, brwith + 2]
+    widths: list[int] = [swidth, fwidth, 1, brwith]
     table = Table(
         n_columns=len(alignments),
-        headers=headers,
         widths=widths,
         alignments=alignments,
-        # header_border={"column": "| ", "bottom": "-", "top": "-"},
-        table_border={"column": "  ", "bottom": "-"},
+        table_border={"column": " ", "bottom": "-", "top": "-"},
         rows=rows,
     )
     return table
