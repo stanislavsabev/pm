@@ -4,10 +4,10 @@ import functools
 import logging
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 from pm.models import Cmd, Flag, Flags
-from pm.typedef import AnyDict
+from pm.typedef import AnyDict, AnyList
 
 profiler: dict[str, float] = {}
 
@@ -96,3 +96,9 @@ def path_name_and_parent(root: str) -> tuple[str, str]:
     if not path.is_dir():
         raise FileNotFoundError(f"Cannot find project path '{root}'")
     return path.name, str(path.parent)
+
+
+def chunks(lst: list[Any], n: int) -> Iterable[AnyList]:
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i : i + n]

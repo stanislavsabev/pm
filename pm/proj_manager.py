@@ -49,7 +49,7 @@ async def read_proj(name: str, path: str, short: str | None = None) -> Proj:
     proj_path = Path(path) / name
     if not proj_path.exists():
         return Proj(
-            name="<missing>",
+            full="<missing>",
             short="<missing>",
             path=path,
         )
@@ -60,7 +60,7 @@ async def read_proj(name: str, path: str, short: str | None = None) -> Proj:
         git = read_repo(proj_path)
     except InvalidGitRepositoryError:
         logger.info(f"Not a git repo: {proj_path}")
-    proj = Proj(name=name, short=(short or name), path=path, local_config=local_config, git=git)
+    proj = Proj(full=name, short=(short or name), path=path, local_config=local_config, git=git)
     return proj
 
 
@@ -137,7 +137,7 @@ class ProjManager:
         # Try find managed
         managed = self.get_projects()
         for proj in managed.values():
-            if name in [proj.short, proj.name]:
+            if name in [proj.short, proj.full]:
                 return proj
 
         # Try find non-managed
