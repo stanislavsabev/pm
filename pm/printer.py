@@ -3,8 +3,8 @@
 import sys
 
 from pm import __version__, config, utils
-from pm.models import BCColors, Flags, PrintableProj, Proj, ProjDict, Table, TCmd, Usage
-from pm.typedef import StrDict, StrListDict
+from pm.models import Clr, Flags, PrintableProj, Proj, ProjDict, Table, TCmd, Usage
+from pm.typedef import StrDict, StrList, StrListDict
 
 
 def print_commands(commands: list[TCmd]) -> None:
@@ -64,25 +64,19 @@ def print_flags(flags: Flags) -> None:
 
 def proj_to_printable(proj: Proj) -> PrintableProj:
     """Create printable object from Proj."""
-    formatted_branches = []
+    formatted_branches: StrList = []
+    remote_branches: StrList = []
     bare = "b" if proj.git and proj.git.is_bare else " "
     if proj.git:
         branches = proj.git.worktrees or proj.git.branches
-        for b in branches:
-            if b == proj.git.active_branch:
-                b_str = f"(*{b})"
-                if config.is_win32():
-                    b_str = f"{BCColors.GREEN_FG}{b_str}{BCColors.ENDC}"
-            else:
-                b_str = f"({b})"
-            formatted_branches.append(b_str)
-        remote_branches = [
-            f"{BCColors.RED_FG}[{b}]{BCColors.ENDC}" for b in proj.git.remote_branches
-        ]
+        formatted_branches.extend(
+            clr(Clr.GREEN_FG, f"*{b}") if b == proj.git.active_branch else b for b in branches
+        )
+        remote_branches.extend(clr(Clr.RED_FG, f"[{b}]") for b in proj.git.remote_branches)
 
     return PrintableProj(
         short=proj.short,
-        name=proj.name,
+        name=proj.full,
         bare=bare,
         branches=formatted_branches,
         remote_branches=remote_branches,
@@ -97,9 +91,10 @@ def print_project(printable: PrintableProj, all_flag: bool = False) -> None:
         name = name[:max_name] + ".."
     end = "\n" if not all_flag else " "
     print(
-        "{short:<} | {name:<} {bare}: {branches}".format(
+        "{short:>10} | {name:<{max_name}} {bare}: {branches}".format(
             short=printable.short,
             name=name,
+            max_name=max_name,
             bare=printable.bare,
             branches=" ".join(printable.branches),
         ),
@@ -139,22 +134,22 @@ def print_table_rows(table: Table) -> None:
     """Print rows of a Table."""
     if not table.rows:
         return
-    n_columns = len(table.headers)
+
     column_border = table.table_border.get("column", "")
-    row_width = sum(table.widths) + (n_columns + 2) * len(column_border)
+    row_width = sum(table.widths) + (table.n_columns + 2) * len(column_border)
 
     if top_border := table.table_border.get("top", ""):
         print(top_border * row_width, end="\n")
 
     for row in table.rows:
-        end = "|"
+        end = column_border
         for i, (val, width, alignment) in enumerate(
             zip(row, table.widths, table.alignments, strict=True), start=1
         ):
-            if i == n_columns:
+            if i == table.n_columns:
                 end = "\n"
             print(
-                "{val:{alignment}{width}}".format(val=str(val), alignment=alignment, width=width),
+                "{val:{alignment}{width}}".format(val=val, alignment=alignment, width=width),
                 end=end,
             )
 
@@ -170,7 +165,6 @@ def print_table(table: Table) -> None:
 
 def print_managed(projects: ProjDict) -> None:
     """Print formatted info for the managed projects."""
-    print("> Projects:\n")
     if not projects:
         print("  na")
         return
@@ -193,14 +187,65 @@ def print_non_managed(dirs: StrDict, non_managed: StrListDict) -> None:
                 print(f" {project}", end="\n")
 
 
-def print_package_version() -> None:
+def print_version_info() -> None:
     """Prints package version."""
-    print(__version__)
+    print(f"v{__version__}")
 
 
-# def projects_to_table(projects: ProjDict) -> Table:
-#     """Prepare projects as Table."""
-#     widths = []
-#     rows = []
-#     for _, proj in projects.items():
-#         proj.short
+def projects_to_table(projects: ProjDict) -> Table:
+    """Prepare projects as Table."""
+    rows = []
+    # prepare rows and calculate widths
+    swidth, fwidth, brwith = 0, 0, 0
+    for _, proj in projects.items():
+        pproj = proj_to_printable(proj=proj)
+        swidth = max(swidth, clr_str_len(proj.short))
+        fwidth = max(fwidth, clr_str_len(proj.full))
+        branches = pproj.branches + pproj.remote_branches
+        curr_row_branches = ""
+        more_branch_rows = []
+        if branches:
+            for chunk in utils.chunks(lst=branches, n=3):
+                chunk_str = " ".join(chunk)
+                brwith = max(brwith, clr_str_len(chunk_str))
+                if not curr_row_branches:
+                    curr_row_branches = chunk_str
+                    continue
+                # create empty row for current chunk
+                more_branch_rows.append([" ", " ", " ", chunk_str])
+        row: StrList = [
+            pproj.short,
+            pproj.name,
+            pproj.bare,
+            curr_row_branches,
+        ]
+        rows.append(row)
+        if more_branch_rows:
+            rows.extend(more_branch_rows)
+
+    # headers = ["short", "full name", "b", "br/wt"]
+    headers: StrList = []
+    alignments: StrList = [">", "<", "^", "<"]
+    widths: list[int] = [swidth + 2, fwidth + 2, 3, brwith + 2]
+    table = Table(
+        n_columns=len(alignments),
+        headers=headers,
+        widths=widths,
+        alignments=alignments,
+        # header_border={"column": "| ", "bottom": "-", "top": "-"},
+        table_border={"column": "  ", "bottom": "-"},
+        rows=rows,
+    )
+    return table
+
+
+def clr(color: Clr, s: str) -> str:
+    """Colored string."""
+    return f"{color.value}{s}{Clr.ENDC.value}"
+
+
+def clr_str_len(chunk_str: str) -> int:
+    """Get str.len for colored string."""
+    for clr in Clr:
+        chunk_str = chunk_str.replace(clr.value, "")
+    return len(chunk_str)
