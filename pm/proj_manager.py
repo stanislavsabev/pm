@@ -6,6 +6,7 @@ import os
 from functools import cache
 from pathlib import Path
 
+from git import InvalidGitRepositoryError
 from git.repo.base import Repo
 
 from pm import config, db
@@ -30,10 +31,12 @@ def read_repo(path: Path) -> Git:
     worktrees: StrList = []
     if repo.bare:
         worktrees = [b for b in branches if (path / b).is_dir()]
+    remote_branches = [ref.name for ref in repo.refs if ref.is_remote()]  # type: ignore[attr-defined]
 
     git = Git(
         active_branch=repo.active_branch.name,
         branches=branches,
+        remote_branches=remote_branches,
         worktrees=worktrees,
         is_bare=repo.bare,
     )
@@ -55,9 +58,8 @@ async def read_proj(name: str, path: str, short: str | None = None) -> Proj:
     git: Git | None = None
     try:
         git = read_repo(proj_path)
-    except Exception:
-        # TODO:  Check the error being raised if not a repo
-        logger.info(f"Not a repo: {proj_path}")
+    except InvalidGitRepositoryError:
+        logger.info(f"Not a git repo: {proj_path}")
     proj = Proj(name=name, short=(short or name), path=path, local_config=local_config, git=git)
     return proj
 

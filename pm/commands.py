@@ -69,7 +69,8 @@ class Ls(Cmd):
 
     def _ls_proj(self, proj: Proj) -> None:
         """Run ls in a project."""
-        printer.print_project(proj)
+        printable = printer.proj_to_printable(proj=proj)
+        printer.print_project(printable=printable, all_flag=self.all_flag)
 
     def _ls_all_projects(self, proj_mgr: ProjManager) -> None:
         """List all projects."""
