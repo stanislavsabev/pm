@@ -3,7 +3,7 @@
 import sys
 
 from pm import __version__, config, utils
-from pm.models import Flags, Proj, ProjDict, TCmd, Usage
+from pm.models import BCColors, Flags, PrintableProj, Proj, ProjDict, Table, TCmd, Usage
 from pm.typedef import StrDict, StrListDict
 
 
@@ -62,37 +62,112 @@ def print_flags(flags: Flags) -> None:
             print(f"\t\t  {line}")
 
 
-# @util.timeit
-def print_project(proj: Proj) -> None:
-    """Print project formatted info."""
+def proj_to_printable(proj: Proj) -> PrintableProj:
+    """Create printable object from Proj."""
     formatted_branches = []
-    is_bare = False
+    bare = "b" if proj.git and proj.git.is_bare else " "
     if proj.git:
         branches = proj.git.worktrees or proj.git.branches
+        for b in branches:
+            if b == proj.git.active_branch:
+                b_str = f"(*{b})"
+                if config.is_win32():
+                    b_str = f"{BCColors.GREEN_FG}{b_str}{BCColors.ENDC}"
+            else:
+                b_str = f"({b})"
+            formatted_branches.append(b_str)
+        remote_branches = [
+            f"{BCColors.RED_FG}[{b}]{BCColors.ENDC}" for b in proj.git.remote_branches
+        ]
 
-        if branches:
-            for branch in branches:
-                branch_str = f"(*{branch})" if branch == proj.git.active_branch else f"({branch})"
-                formatted_branches.append(branch_str)
-        is_bare = proj.git.is_bare
-    name = proj.name
-    ljust = config.ljust()
-    rjust = config.rjust()
-    if len(name) > ljust:
-        name = ".." + name[-ljust + 2 :]
-    print(
-        "{short:<{rjust}} | {name:<{ljust}} {bare}: {branches}".format(
-            short=proj.short,
-            rjust=rjust,
-            ljust=ljust,
-            name=name,
-            bare="b" if is_bare else " ",
-            branches=" ".join(formatted_branches),
-        )
+    return PrintableProj(
+        short=proj.short,
+        name=proj.name,
+        bare=bare,
+        branches=formatted_branches,
+        remote_branches=remote_branches,
     )
 
 
-# @util.timeit
+def print_project(printable: PrintableProj, all_flag: bool = False) -> None:
+    """Print project formatted info."""
+    name = printable.name
+    max_name = 40
+    if len(name) > max_name:
+        name = name[:max_name] + ".."
+    end = "\n" if not all_flag else " "
+    print(
+        "{short:<} | {name:<} {bare}: {branches}".format(
+            short=printable.short,
+            name=name,
+            bare=printable.bare,
+            branches=" ".join(printable.branches),
+        ),
+        end=end,
+    )
+    if all_flag:
+        print(
+            "r: {remote_branches}".format(
+                remote_branches=" ".join(printable.remote_branches),
+            ),
+            end="\n",
+        )
+
+
+def print_table_headers(table: Table) -> None:
+    """Print headers of a Table."""
+    if not table.headers:
+        return
+    n_columns = len(table.headers)
+    column_border = table.header_border.get("column", "")
+    row_width = sum(table.widths) + (n_columns + 2) * len(column_border)
+    end = column_border
+
+    if top_border := table.header_border.get("top", ""):
+        print(top_border * row_width, end="\n")
+
+    for i, (header, width) in enumerate(zip(table.headers, table.widths, strict=True), start=1):
+        if i == n_columns:
+            end = "\n"
+        print("{header:^{width}}".format(header=header, width=width), end=end)
+
+    if bottom_border := table.header_border.get("bottom", ""):
+        print(bottom_border * row_width, end="\n")
+
+
+def print_table_rows(table: Table) -> None:
+    """Print rows of a Table."""
+    if not table.rows:
+        return
+    n_columns = len(table.headers)
+    column_border = table.table_border.get("column", "")
+    row_width = sum(table.widths) + (n_columns + 2) * len(column_border)
+
+    if top_border := table.table_border.get("top", ""):
+        print(top_border * row_width, end="\n")
+
+    for row in table.rows:
+        end = "|"
+        for i, (val, width, alignment) in enumerate(
+            zip(row, table.widths, table.alignments, strict=True), start=1
+        ):
+            if i == n_columns:
+                end = "\n"
+            print(
+                "{val:{alignment}{width}}".format(val=str(val), alignment=alignment, width=width),
+                end=end,
+            )
+
+    if bottom_border := table.table_border.get("bottom", ""):
+        print(bottom_border * row_width, end="\n")
+
+
+def print_table(table: Table) -> None:
+    """Print table."""
+    print_table_headers(table=table)
+    print_table_rows(table=table)
+
+
 def print_managed(projects: ProjDict) -> None:
     """Print formatted info for the managed projects."""
     print("> Projects:\n")
@@ -100,10 +175,10 @@ def print_managed(projects: ProjDict) -> None:
         print("  na")
         return
     for project in sorted(projects.values(), key=lambda p: p.short.lower()):
-        print_project(project)
+        printable = proj_to_printable(proj=project)
+        print_project(printable=printable)
 
 
-# @util.timeit
 def print_non_managed(dirs: StrDict, non_managed: StrListDict) -> None:
     """Print formatted info for the non-managed projects."""
     for group in dirs:
@@ -121,3 +196,11 @@ def print_non_managed(dirs: StrDict, non_managed: StrListDict) -> None:
 def print_package_version() -> None:
     """Prints package version."""
     print(__version__)
+
+
+# def projects_to_table(projects: ProjDict) -> Table:
+#     """Prepare projects as Table."""
+#     widths = []
+#     rows = []
+#     for _, proj in projects.items():
+#         proj.short

@@ -27,6 +27,16 @@ else:
     raise OSError(f"Unsupported platform {sys.platform}")
 
 
+def is_win32() -> bool:
+    """Is windows platform."""
+    return PLATFORM == WINDOWS
+
+
+def is_unix() -> bool:
+    """Is unix platform."""
+    return PLATFORM in [LINUX, MACOS]
+
+
 @cache
 def get_projects_dir() -> str:
     """Returns PROJECTS_DIR env variable."""
