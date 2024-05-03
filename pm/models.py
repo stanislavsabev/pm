@@ -1,4 +1,5 @@
 import abc
+import enum
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -69,13 +70,14 @@ class Proj:
     """Project data.
 
     Attributes:
-        short: str, short name for the project
-        name: str, the project name
-        path: str, the project path
-        local_config: dict, optional configuration data read from local file.
+        short: str, short project name
+        full: str, full project name
+        path: str, project path
+        local_config: dict, optional info from local config file
+        git: Git, optional git repo info
     """
 
-    name: str
+    full: str
     short: str
     path: str
     local_config: AnyDict = field(default_factory=dict)
@@ -85,7 +87,7 @@ class Proj:
 ProjDict = dict[str, Proj]
 
 
-class BCColors:
+class Clr(enum.StrEnum):
     """Batch console colors."""
 
     GRAY_FG = "\033[90m"
@@ -105,6 +107,7 @@ class BCColors:
 class Table:
     """Table to print."""
 
+    n_columns: int
     headers: StrList = field(default_factory=list)
     # {"column": "|", "top": "=", "bottom": "-"}
     header_border: StrDict = field(default_factory=dict)

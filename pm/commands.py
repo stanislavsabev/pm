@@ -53,7 +53,7 @@ class Ls(Cmd):
 
     def _ls_worktree(self, proj: Proj) -> None:
         """Run ls in a worktree of a project."""
-        path = Path(proj.path) / proj.name / self.worktree
+        path = Path(proj.path) / proj.full / self.worktree
         if not path.is_dir():
             raise FileNotFoundError(f"Failed to find {self.worktree} in {self.proj_name}")
         ls_command = ["ls"]
@@ -72,11 +72,15 @@ class Ls(Cmd):
         printable = printer.proj_to_printable(proj=proj)
         printer.print_project(printable=printable, all_flag=self.all_flag)
 
-    def _ls_all_projects(self, proj_mgr: ProjManager) -> None:
+    def _ls_projects(self, proj_mgr: ProjManager) -> None:
         """List all projects."""
         projects = proj_mgr.get_projects()
-        printer.print_managed(projects)
-        if self.all_flag and (non_managed := proj_mgr.get_non_managed()):
+        print("> Projects:\n")
+        table = printer.projects_to_table(projects=projects)
+        printer.print_table(table=table)
+
+    def _ls_non_managed(self, proj_mgr: ProjManager) -> None:
+        if non_managed := proj_mgr.get_non_managed():
             printer.print_non_managed(config.dirs(), non_managed)
 
     def run(self) -> None:
@@ -95,7 +99,9 @@ class Ls(Cmd):
             else:
                 self._ls_proj(proj)
         else:
-            self._ls_all_projects(proj_mgr=proj_mgr)
+            self._ls_projects(proj_mgr=proj_mgr)
+            if self.all_flag:
+                self._ls_non_managed(proj_mgr=proj_mgr)
 
 
 class Cd(Cmd):
@@ -131,12 +137,12 @@ class Cd(Cmd):
             return
 
         for _, proj in projects.items():
-            if proj.short == proj_name or proj.name == proj_name:
+            if proj.short == proj_name or proj.full == proj_name:
                 break
         else:
             raise ValueError(f"Cannot find project {proj}")
 
-        path = Path(proj.path) / proj.name
+        path = Path(proj.path) / proj.full
         if wt:
             path = path.joinpath(wt)
         os.system(f"start wt -d {path}")
@@ -170,7 +176,7 @@ class Open(Cmd):
         proj = proj_mgr.find_proj(proj_name)
         if not proj:
             raise ValueError(f"Could not find project `{proj_name}`")
-        path = utils.get_proj_path(config_path=proj.path, proj_name=proj.name, worktree=wt)
+        path = utils.get_proj_path(config_path=proj.path, proj_name=proj.full, worktree=wt)
 
         editor = config.get_editor()
         cmd = subprocess.Popen([editor, path], shell=True)
@@ -204,7 +210,7 @@ class Add(Cmd):
         proj_mgr = get_proj_manager()
         projects = proj_mgr.get_projects()
         for name, project in projects.items():
-            if project.name == self.proj_name:
+            if project.full == self.proj_name:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
@@ -298,7 +304,7 @@ class PackageVersion(Cmd):
 
     def run(self) -> None:
         """Run the version command."""
-        printer.print_package_version()
+        printer.print_version_info()
 
 
 COMMANDS: list[TCmd] = [

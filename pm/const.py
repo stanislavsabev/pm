@@ -12,4 +12,4 @@ DB_COLUMNS = "name", "short", "path"
 LOCAL_CONFIG_NAME = ".pm-cfg"
 
 
-SEE_h = ", see -h for usage"
+SEE_HELP = ", see -h for usage"

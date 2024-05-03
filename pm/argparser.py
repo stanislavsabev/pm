@@ -3,6 +3,7 @@
 import logging
 
 from pm import commands, utils
+from pm.const import SEE_HELP
 from pm.models import Cmd, Flag
 from pm.typedef import StrList
 
@@ -56,17 +57,17 @@ def parse(argv: StrList) -> Cmd:
 
             flag = utils.get_flag_by_name(arg, cmd.flags)
             if not flag:
-                raise ValueError(f"Unknown flag {arg} for command {cmd.name}")
+                raise ValueError(f"Unknown flag {arg} for command {cmd.name}. {SEE_HELP}")
             ndx = parse_flag(flag, argv, ndx)
         elif not cmd and arg in command_names:
             cmd = commands.create_cmd(arg)
         else:
             positional.append(arg)
             if len(positional) > MAX_POSITIONAL_ARGS:
-                raise ValueError("Too many positional arguments.")
+                raise ValueError(f"Too many positional arguments. {SEE_HELP}")
         ndx += 1
     if not cmd:
-        raise ValueError("Missing command name")
+        raise ValueError(f"Missing command name. {SEE_HELP}")
     if positional:
         cmd.positional = positional
     return cmd
