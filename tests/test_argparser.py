@@ -59,19 +59,19 @@ def test_parse_app_flags(argv_str, expect_name):
             models.Flag(name="a/all"),
             ["-a", "foo"],
             True,
-            1,
+            0,
         ),
         (
             models.Flag(name="s/short", val=""),
             ["-s", "foo"],
             "foo",
-            2,
+            1,
         ),
         (
             models.Flag(name="n/names", val=[]),
-            ["--names", "foo", "bar"],
+            ["--names", "foo", "bar", "--next"],
             ["foo", "bar"],
-            3,
+            2,
         ),
     ],
 )

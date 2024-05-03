@@ -77,12 +77,12 @@ def parse_flag(flag: Flag, argv: StrList, ndx: int) -> int:
     if isinstance(flag.val, bool):
         flag.val = True
     elif isinstance(flag.val, str):
-        flag.val = argv[ndx]
         ndx += 1
+        flag.val = argv[ndx]
     elif isinstance(flag.val, list):
-        while ndx < len(argv) and not argv[ndx].startswith("-"):
-            flag.val.append(argv[ndx])
+        while ndx + 1 < len(argv) and not argv[ndx + 1].startswith("-"):
             ndx += 1
+            flag.val.append(argv[ndx])
     else:
         raise TypeError(f"Unsupported flag type {type(flag.val)}")
     return ndx
