@@ -216,16 +216,13 @@ def projects_to_table(projects: ProjDict) -> Table:
             rows.extend(more_branch_rows)
 
     # headers = ["short", "full name", "b", "br/wt"]
-    headers: StrList = []
     alignments: StrList = [">", "<", "^", "<"]
-    widths: list[int] = [swidth + 2, fwidth + 2, 3, brwith + 2]
+    widths: list[int] = [swidth, fwidth, 1, brwith]
     table = Table(
         n_columns=len(alignments),
-        headers=headers,
         widths=widths,
         alignments=alignments,
-        # header_border={"column": "| ", "bottom": "-", "top": "-"},
-        table_border={"column": "  ", "bottom": "-"},
+        table_border={"column": " ", "bottom": "-", "top": "-"},
         rows=rows,
     )
     return table

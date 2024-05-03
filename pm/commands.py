@@ -81,8 +81,7 @@ class Ls(Cmd):
             for _, proj in projects.items():
                 if proj.git:
                     proj.git.remote_branches.clear()
-
-        print("> Projects:\n")
+        print("> Projects:")
         table = printer.projects_to_table(projects=projects)
         printer.print_table(table=table)
 
