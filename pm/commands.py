@@ -27,7 +27,22 @@ class Ls(Cmd):
                 header="List all projects, including non-managed.",
                 description=["If PROJECT, list all worktrees / branches, including remote."],
             ),
-        )
+        ),
+        Flag(
+            name="o/sort",
+            val="",
+            usage=Usage(
+                header="Sort managed projects",
+                arg="SORT_KEY",
+                description=[
+                    "Sort key - sort by",
+                    "  0 / 'short' - short name",
+                    "  1 / 'long' - long name",
+                    " -1 / 'last' - last used, default",
+                ],
+            ),
+        ),
+        Flag(name="s/short", val="", usage=Usage(header="Foo bar")),
     ]
 
     usage = Usage(

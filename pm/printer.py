@@ -56,10 +56,11 @@ def print_flags(flags: Flags) -> None:
         usage = flag.usage
         header = usage.header
         if usage.arg:
-            names += f"\t{usage.arg}"
+            names += f"={usage.arg}\n\t"
+
         print(f"  {names}\t{header}")
         for line in usage.description:
-            print(f"\t\t  {line}")
+            print(f"\t\t{line}")
 
 
 def proj_to_printable(proj: Proj) -> PrintableProj:
