@@ -67,7 +67,8 @@ scripts_are_modules = true
 non_interactive = true
 
 exclude = '''(?x)(
-    tests/*
+    tests/*|
+    testing/*
 )'''
 
 [tool.ruff]

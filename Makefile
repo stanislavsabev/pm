@@ -52,7 +52,8 @@ req-update: ## Update requirements
 	source $(VENV_PATH)/bin/activate \
 	&& pip-compile requirements/requirements.in \
 	&& pip-compile requirements/requirements-dev.in \
-	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt
+	&& pip-sync requirements/requirements.txt requirements/requirements-dev.txt \
+	&& pip install -e .
 
 .PHONY: run
 run: ## Run example

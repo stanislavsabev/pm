@@ -1,6 +1,7 @@
 """Database module."""
 
 import csv
+from typing import Iterable
 
 from pm import const
 from pm.typedef import RecordTuple, StrList
@@ -14,16 +15,21 @@ def create_db() -> None:
         add_record(const.DB_COLUMNS)
 
 
-def read_db() -> list[StrList]:
+def read_db() -> Iterable[StrList]:
     """Read database file."""
     if not const.DB_FILE.exists():
         raise FileNotFoundError(
             "Cannot find database file. Maybe you forgot to execute `pm init`?"
         )
+    first_line = True
     with const.DB_FILE.open("r", encoding="utf-8") as fp:
-        records = list(filter(None, csv.reader(fp)))
-    assert tuple(records[0]) == const.DB_COLUMNS
-    return records[1:]
+        for line in csv.reader(fp):
+            if first_line:
+                first_line = False
+                continue
+
+            if line:
+                yield line
 
 
 def add_record(record: RecordTuple) -> None:
