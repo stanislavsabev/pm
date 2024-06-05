@@ -1,14 +1,16 @@
 """Commands module."""
 
+import asyncio
 import logging
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from pm import config, const, db, printer, utils
 from pm.models import Cmd, Flag, Proj, TCmd, Usage
-from pm.proj_manager import ProjManager, add_new_proj, get_proj_manager
+from pm.proj_manager import ProjManager, add_new_proj, get_proj_manager, open_and_update
 
 logger = logging.getLogger("pm")
 
@@ -106,6 +108,7 @@ class Ls(Cmd):
         printer.print_table(table=table)
 
     def _ls_non_managed(self, proj_mgr: ProjManager) -> None:
+        """List non-managed projects."""
         if non_managed := proj_mgr.get_non_managed():
             printer.print_non_managed(config.dirs(), non_managed)
 
@@ -204,11 +207,10 @@ class Open(Cmd):
             raise ValueError(f"Could not find project `{proj_name}`")
         path = utils.get_proj_path(config_path=proj.path, proj_name=proj.name, worktree=wt)
 
-        editor = config.get_editor()
-        cmd = subprocess.Popen([editor, path], shell=True)
-        out_, err_ = cmd.communicate()
-        if out_ or err_:
-            print(f"{out_=}, {err_=}")
+        if wt:
+            proj.recent_branch = wt
+        proj.last_opened = datetime.now()
+        asyncio.run(open_and_update(path, proj), debug=True)
 
 
 class Add(Cmd):

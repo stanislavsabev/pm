@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import subprocess
 from datetime import datetime
 from functools import cache
 from pathlib import Path
@@ -87,6 +88,33 @@ def add_new_proj(name: str, short: str, path: str) -> None:
     proj_path = None if path_obj == Path(config.get_projects_dir()) else str(path_obj)
     short_name = None if name == short else short
     db.add_record(record=(name, short_name, proj_path, "", ""))
+
+
+async def update_proj_opened(proj: Proj) -> None:
+    """Add new project with local file and save to the database."""
+    await asyncio.sleep(0)
+
+    last_opened_str = proj.last_opened.strftime(const.DATE_FORMAT)
+    db.update_record(
+        record=(proj.name, proj.short, proj.path, last_opened_str, proj.recent_branch)
+    )
+
+
+async def open_and_update(path: str, proj: Proj) -> None:
+    """Open path in editor and update proj open."""
+    out_, err_ = await editor_open(path=path)
+    await update_proj_opened(proj)
+    if out_ or err_:
+        print(f"{out_=}, {err_=}")
+
+
+async def editor_open(path: str) -> tuple[bytes, bytes]:
+    """Open path with editor."""
+    await asyncio.sleep(0)
+    editor = config.get_editor()
+    cmd = subprocess.Popen([editor, path], shell=True)
+    out_, err_ = cmd.communicate()
+    return out_, err_
 
 
 class ProjManager:
