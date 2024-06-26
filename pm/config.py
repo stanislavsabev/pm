@@ -106,9 +106,9 @@ def get_editor() -> str:
     return os.path.expandvars((r"%EDITOR%" if PLATFORM == WINDOWS else r"$EDITOR"))
 
 
-# @util.timeit
 def read_local_config(path: Path) -> AnyDict:
     """Read local config file."""
+    # await asyncio.sleep(0.1)
     local_config_file = path / const.LOCAL_CONFIG_NAME
     if not local_config_file.exists():
         return {}
