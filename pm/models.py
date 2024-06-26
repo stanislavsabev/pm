@@ -1,8 +1,10 @@
 import abc
 import enum
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Iterable
 
+from pm import const
 from pm.typedef import AnyDict, StrDict, StrList
 
 
@@ -71,17 +73,21 @@ class Proj:
 
     Attributes:
         short: str, short project name
-        full: str, full project name
+        name: str, project name
         path: str, project path
         local_config: dict, optional info from local config file
         git: Git, optional git repo info
+        last_opened: datetime, last open time
+        recent_branch: str, last opened branch
     """
 
-    full: str
+    name: str
     short: str
     path: str
     local_config: AnyDict = field(default_factory=dict)
     git: Git | None = field(default=None)
+    last_opened: datetime = field(default=const.DAY_ONE)
+    recent_branch: str | None = field(default=None)
 
 
 ProjDict = dict[str, Proj]

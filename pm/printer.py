@@ -69,22 +69,28 @@ def proj_to_printable(proj: Proj) -> PrintableProj:
     bare = "b" if proj.git and proj.git.is_bare else " "
     if proj.git:
         branches = proj.git.worktrees or proj.git.branches
-        formatted_branches.extend(
-            clr(Clr.GREEN_FG, f"*{b}") if b == proj.git.active_branch else b for b in branches
-        )
+        formatted_branches = []
+        for b in branches:
+            if b == proj.recent_branch:
+                b = clr(Clr.YELLOW_FG, b)
+            elif b == proj.git.active_branch:
+                b = clr(Clr.GREEN_FG, f"*{b}")
+            formatted_branches.append(b)
+
         remote_branches.extend(clr(Clr.RED_FG, f"[{b}]") for b in proj.git.remote_branches)
 
     return PrintableProj(
         short=proj.short,
-        name=proj.full,
+        name=proj.name,
         bare=bare,
         branches=formatted_branches,
         remote_branches=remote_branches,
     )
 
 
-def print_project(printable: PrintableProj) -> None:
+def print_project(proj: Proj) -> None:
     """Print project formatted info."""
+    printable = proj_to_printable(proj=proj)
     name = printable.name
     max_name = 40
     if len(name) > max_name:
@@ -161,8 +167,7 @@ def print_managed(projects: ProjDict) -> None:
         print("  na")
         return
     for project in sorted(projects.values(), key=lambda p: p.short.lower()):
-        printable = proj_to_printable(proj=project)
-        print_project(printable=printable)
+        print_project(proj=project)
 
 
 def print_non_managed(dirs: StrDict, non_managed: StrListDict) -> None:
@@ -192,7 +197,7 @@ def projects_to_table(projects: ProjDict) -> Table:
     for _, proj in projects.items():
         pproj = proj_to_printable(proj=proj)
         swidth = max(swidth, clr_str_len(proj.short))
-        fwidth = max(fwidth, clr_str_len(proj.full))
+        fwidth = max(fwidth, clr_str_len(proj.name))
         branches = pproj.branches + pproj.remote_branches
         curr_row_branches = ""
         more_branch_rows = []

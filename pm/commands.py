@@ -1,14 +1,16 @@
 """Commands module."""
 
+import asyncio
 import logging
 import os
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from pm import config, const, db, printer, utils
 from pm.models import Cmd, Flag, Proj, TCmd, Usage
-from pm.proj_manager import ProjManager, add_new_proj, get_proj_manager
+from pm.proj_manager import ProjManager, add_new_proj, get_proj_manager, open_and_update
 
 logger = logging.getLogger("pm")
 
@@ -27,7 +29,17 @@ class Ls(Cmd):
                 header="List all projects, including non-managed.",
                 description=["If PROJECT, list all worktrees / branches, including remote."],
             ),
-        )
+        ),
+        Flag(
+            name="r/recent",
+            val=False,
+            usage=Usage(
+                header="Sort by recently opened projects / worktrees",
+                description=[
+                    "Sort by recently opened projects",
+                ],
+            ),
+        ),
     ]
 
     usage = Usage(
@@ -37,12 +49,13 @@ class Ls(Cmd):
             ("PROJECT", ["Optional project name"]),
             ("WORKTREE", ["Optional worktree or folder name"]),
         ],
-        short="List projects / project worktrees, [-a] for all",
+        short="List projects / project worktrees [-ar]",
     )
 
     def __init__(self) -> None:
         """Constructor."""
         self.all_flag = False
+        self.recent = False
         self.proj_name = ""
         self.worktree = ""
 
@@ -50,10 +63,12 @@ class Ls(Cmd):
         for flag in self.flags:
             if flag.name == "a/all":
                 self.all_flag = bool(flag.val)
+            if flag.name == "r/recent":
+                self.recent = bool(flag.val)
 
     def _ls_worktree(self, proj: Proj) -> None:
         """Run ls in a worktree of a project."""
-        path = Path(proj.path) / proj.full / self.worktree
+        path = Path(proj.path) / proj.name / self.worktree
         if not path.is_dir():
             raise FileNotFoundError(f"Failed to find {self.worktree} in {self.proj_name}")
         ls_command = ["ls"]
@@ -69,23 +84,31 @@ class Ls(Cmd):
 
     def _ls_proj(self, proj: Proj) -> None:
         """Run ls in a project."""
-        printable = printer.proj_to_printable(proj=proj)
-        if not self.all_flag:
-            printable.remote_branches.clear()
-        printer.print_project(printable=printable)
+        if proj.git:
+            if proj.recent_branch and proj.recent_branch in proj.git.branches:
+                ndx = proj.git.branches.index(proj.recent_branch)
+                if ndx > 0:
+                    proj.git.branches.insert(0, proj.git.branches.pop(ndx))
+
+            if not self.all_flag:
+                proj.git.remote_branches.clear()
+        printer.print_project(proj=proj)
 
     def _ls_projects(self, proj_mgr: ProjManager) -> None:
         """List all projects."""
-        projects = proj_mgr.get_projects()
+        projects = proj_mgr.get_managed()
         if not self.all_flag:
             for _, proj in projects.items():
                 if proj.git:
                     proj.git.remote_branches.clear()
+        if self.recent:
+            projects = dict(sorted(projects.items(), key=lambda item: item[1].last_opened))
         print("> Projects:")
         table = printer.projects_to_table(projects=projects)
         printer.print_table(table=table)
 
     def _ls_non_managed(self, proj_mgr: ProjManager) -> None:
+        """List non-managed projects."""
         if non_managed := proj_mgr.get_non_managed():
             printer.print_non_managed(config.dirs(), non_managed)
 
@@ -136,19 +159,19 @@ class Cd(Cmd):
         proj_name, wt = self.proj_name, self.worktree
 
         proj_mgr = get_proj_manager()
-        projects = proj_mgr.get_projects()
+        projects = proj_mgr.get_managed()
 
         if config.PLATFORM != config.WINDOWS:
             print(f"Command not supported on '{config.PLATFORM}'")
             return
 
         for _, proj in projects.items():
-            if proj.short == proj_name or proj.full == proj_name:
+            if proj.short == proj_name or proj.name == proj_name:
                 break
         else:
             raise ValueError(f"Cannot find project {proj}")
 
-        path = Path(proj.path) / proj.full
+        path = Path(proj.path) / proj.name
         if wt:
             path = path.joinpath(wt)
         os.system(f"start wt -d {path}")
@@ -182,13 +205,12 @@ class Open(Cmd):
         proj = proj_mgr.find_proj(proj_name)
         if not proj:
             raise ValueError(f"Could not find project `{proj_name}`")
-        path = utils.get_proj_path(config_path=proj.path, proj_name=proj.full, worktree=wt)
+        path = utils.get_proj_path(config_path=proj.path, proj_name=proj.name, worktree=wt)
 
-        editor = config.get_editor()
-        cmd = subprocess.Popen([editor, path], shell=True)
-        out_, err_ = cmd.communicate()
-        if out_ or err_:
-            print(f"{out_=}, {err_=}")
+        if wt:
+            proj.recent_branch = wt
+        proj.last_opened = datetime.now()
+        asyncio.run(open_and_update(path, proj), debug=True)
 
 
 class Add(Cmd):
@@ -214,9 +236,9 @@ class Add(Cmd):
 
     def _check_config(self) -> None:
         proj_mgr = get_proj_manager()
-        projects = proj_mgr.get_projects()
+        projects = proj_mgr.get_managed()
         for name, project in projects.items():
-            if project.full == self.proj_name:
+            if project.name == self.proj_name:
                 raise FileExistsError(f"Project '{name}' already exists")
             if project.short == self.short_name:
                 raise NameError(f"Short name '{self.short_name}' already exists")
